@@ -30,8 +30,29 @@ export async function alternarAtivoBarbeiro(id: string, novoValor: boolean) { //
 
   await supabase
     .from("barbeiros")
-    .update({ ativo: novoValor }) // nunca apagamos um barbeiro (ele pode ter histórico de agendamentos); só desativamos
+    .update({ ativo: novoValor }) // alterna o status sem apagar nada (apagar de verdade é uma ação separada, ver apagarBarbeiro)
     .eq("id", id);
 
   revalidatePath("/painel/barbeiros"); // atualiza a lista pra mostrar o novo status
+}
+
+export async function apagarBarbeiro(id: string, _estadoAnterior: EstadoBarbeiros, _formData: FormData): Promise<EstadoBarbeiros> { // chamado pelo botão "Apagar" (depois da confirmação no navegador)
+  void _estadoAnterior; // os 2 últimos parâmetros existem só porque o useActionState (no BotaoApagar) sempre chama a função assim; não usamos os valores
+  void _formData;
+
+  const { supabase } = await obterBarbeariaAtual(); // garante que quem chamou está logado (a policy do banco cuida do resto)
+
+  const { error } = await supabase.from("barbeiros").delete().eq("id", id);
+
+  if (error) {
+    if (error.code === "23503") { // violação de chave estrangeira: a tabela agendamentos NÃO tem cascade pra barbeiros, de propósito (preserva histórico)
+      return {
+        erro: "Não é possível apagar porque existem agendamentos ligados a ele. Use Desativar para tirá-lo da agenda mantendo o histórico.",
+      };
+    }
+    return { erro: "Não foi possível apagar o barbeiro. Tente novamente." };
+  }
+
+  revalidatePath("/painel/barbeiros"); // faz a lista da página recarregar sem o barbeiro apagado
+  return {};
 }

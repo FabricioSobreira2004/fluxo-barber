@@ -48,8 +48,29 @@ export async function alternarAtivoServico(id: string, novoValor: boolean) { // 
 
   await supabase
     .from("servicos")
-    .update({ ativo: novoValor }) // nunca apagamos um serviço (ele pode estar referenciado em agendamentos antigos); só desativamos
+    .update({ ativo: novoValor }) // alterna o status sem apagar nada (apagar de verdade é uma ação separada, ver apagarServico)
     .eq("id", id);
 
   revalidatePath("/painel/servicos"); // atualiza a lista pra mostrar o novo status
+}
+
+export async function apagarServico(id: string, _estadoAnterior: EstadoServicos, _formData: FormData): Promise<EstadoServicos> { // chamado pelo botão "Apagar" (depois da confirmação no navegador)
+  void _estadoAnterior; // os 2 últimos parâmetros existem só porque o useActionState (no BotaoApagar) sempre chama a função assim; não usamos os valores
+  void _formData;
+
+  const { supabase } = await obterBarbeariaAtual(); // garante que quem chamou está logado (a policy do banco cuida do resto)
+
+  const { error } = await supabase.from("servicos").delete().eq("id", id);
+
+  if (error) {
+    if (error.code === "23503") { // violação de chave estrangeira: a tabela agendamentos NÃO tem cascade pra servicos, de propósito (preserva histórico)
+      return {
+        erro: "Não é possível apagar porque existem agendamentos ligados a ele. Use Desativar para tirá-lo da agenda mantendo o histórico.",
+      };
+    }
+    return { erro: "Não foi possível apagar o serviço. Tente novamente." };
+  }
+
+  revalidatePath("/painel/servicos"); // faz a lista da página recarregar sem o serviço apagado
+  return {};
 }
