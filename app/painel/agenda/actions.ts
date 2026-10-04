@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"; // avisa o Next.js que a agenda precisa ser buscada de novo
 import { obterBarbeariaAtual } from "@/utils/supabase/barbearia-atual"; // descobre a barbearia do usuário logado
-import { paraTimestampBrasil } from "@/utils/data"; // monta o timestamp de início a partir de data + hora digitadas
+import { paraTimestampBrasil, diaDaSemana } from "@/utils/data"; // monta o timestamp de início e descobre o dia da semana, a partir de data + hora digitadas
 import { type StatusAgendamento } from "@/utils/status-agendamento"; // os status possíveis de um agendamento
 
 export interface EstadoAgenda { // formato do "estado" que o useActionState guarda e mostra na tela
@@ -92,4 +92,22 @@ export async function mudarStatusAgendamento(id: string, novoStatus: StatusAgend
   await supabase.from("agendamentos").update({ status: novoStatus }).eq("id", id);
 
   revalidatePath("/painel/agenda"); // atualiza a lista pra mostrar o novo status
+}
+
+// chamada direto pelo formulário (fora de um <form>, via useEffect) sempre que barbeiro/data/hora mudam,
+// só pra avisar o dono se o horário escolhido não bate com o expediente cadastrado -- NÃO bloqueia o agendamento,
+// porque o dono pode querer encaixar um cliente fora do horário normal
+export async function verificarExpediente(barbeiroId: string, data: string, hora: string): Promise<boolean> {
+  const { supabase } = await obterBarbeariaAtual(); // garante que quem chamou está logado
+
+  const horaComSegundos = `${hora}:00`; // "08:00" -> "08:00:00", pra comparar no mesmo formato que o banco guarda (coluna "time")
+
+  const { data: intervalos } = await supabase // todos os intervalos de trabalho desse barbeiro, nesse dia da semana
+    .from("horarios_trabalho")
+    .select("inicio, fim")
+    .eq("barbeiro_id", barbeiroId)
+    .eq("dia_semana", diaDaSemana(data));
+
+  // comparação de texto funciona aqui porque o formato "HH:MM:SS" sempre tem 2 dígitos em cada parte
+  return (intervalos ?? []).some((intervalo) => horaComSegundos >= intervalo.inicio && horaComSegundos < intervalo.fim);
 }

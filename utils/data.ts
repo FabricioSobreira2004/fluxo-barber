@@ -24,6 +24,11 @@ export function paraTimestampBrasil(dataISO: string, horaISO: string): string { 
   return `${dataISO}T${horaISO}:00-03:00`;
 }
 
+export function diaDaSemana(dataISO: string): number { // "2026-10-04" -> 0 (domingo) a 6 (sábado), mesmo padrão de horarios_trabalho.dia_semana
+  const [ano, mes, dia] = dataISO.split("-").map(Number);
+  return new Date(Date.UTC(ano, mes - 1, dia, 12)).getUTCDay(); // meio-dia UTC: o dia da semana não muda em nenhum fuso horário razoável
+}
+
 export function formatarHora(timestamptz: string): string { // ex: "2026-10-04T11:00:00+00:00" -> "08:00" (já convertido pro fuso de Brasília)
   return new Date(timestamptz).toLocaleTimeString("pt-BR", { timeZone: FUSO_BRASIL, hour: "2-digit", minute: "2-digit" });
 }

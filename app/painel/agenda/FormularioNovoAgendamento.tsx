@@ -1,12 +1,12 @@
-"use client"; // precisa do hook useActionState (só existe no navegador), por isso vira Client Component
+"use client"; // precisa de useState/useEffect/useActionState (só existem no navegador), por isso vira Client Component
 
-import { useActionState } from "react"; // liga um <form> a uma Server Action e guarda o resultado/erro entre tentativas
+import { useActionState, useEffect, useState } from "react"; // hooks de estado/efeito e o hook que liga o form à Server Action
 import { Label } from "@/components/ui/Label"; // legenda dos campos
 import { Input } from "@/components/ui/Input"; // campo de texto estilizado
 import { Select } from "@/components/ui/Select"; // menu de opções estilizado
 import { Button } from "@/components/ui/Button"; // botão estilizado
 import { FormMessage } from "@/components/ui/FormMessage"; // caixa de mensagem de erro
-import { criarAgendamento, type EstadoAgenda } from "./actions"; // Server Action e o formato do estado dela
+import { criarAgendamento, verificarExpediente, type EstadoAgenda } from "./actions"; // Server Actions usadas por este formulário
 
 const ESTADO_INICIAL: EstadoAgenda = {}; // nenhum erro antes do primeiro envio
 
@@ -30,6 +30,33 @@ export function FormularioNovoAgendamento({
   barbeiroPreSelecionado,
 }: PropriedadesFormularioNovoAgendamento) {
   const [estado, acao, pendente] = useActionState(criarAgendamento, ESTADO_INICIAL); // conecta o form à Server Action "criarAgendamento"
+
+  // barbeiro/data/hora precisam ser campos "controlados" (com useState) pra conseguirmos observar
+  // toda mudança e perguntar ao servidor se esse horário bate com o expediente cadastrado
+  const [barbeiroId, setBarbeiroId] = useState(barbeiroPreSelecionado ?? "");
+  const [data, setData] = useState(dataSelecionada);
+  const [hora, setHora] = useState("");
+  const [foraDoExpediente, setForaDoExpediente] = useState(false); // true quando o horário não cai em nenhum intervalo cadastrado
+
+  useEffect(() => { // toda vez que barbeiro, data ou hora mudam, confere de novo o expediente
+    let cancelado = false; // evita atualizar o estado se um novo efeito já começou antes deste terminar (digitação rápida)
+
+    async function conferir() {
+      if (!barbeiroId || !data || !hora) { // sem dados suficientes ainda: não mostra aviso nenhum
+        if (!cancelado) setForaDoExpediente(false);
+        return;
+      }
+
+      const dentroDoExpediente = await verificarExpediente(barbeiroId, data, hora);
+      if (!cancelado) setForaDoExpediente(!dentroDoExpediente);
+    }
+
+    conferir();
+
+    return () => { // roda antes do próximo efeito (ou ao desmontar), marcando esta rodada como ultrapassada
+      cancelado = true;
+    };
+  }, [barbeiroId, data, hora]);
 
   return (
     <form action={acao} className="flex flex-col gap-4"> {/* ao enviar, o React chama a Server Action automaticamente */}
@@ -59,7 +86,7 @@ export function FormularioNovoAgendamento({
 
         <div>
           <Label htmlFor="barbeiro">Barbeiro</Label>
-          <Select id="barbeiro" name="barbeiro" defaultValue={barbeiroPreSelecionado ?? ""} required>
+          <Select id="barbeiro" name="barbeiro" value={barbeiroId} onChange={(evento) => setBarbeiroId(evento.target.value)} required>
             <option value="" disabled>Escolha um barbeiro</option>
             {barbeiros.map((barbeiro) => (
               <option key={barbeiro.id} value={barbeiro.id}>{barbeiro.nome}</option>
@@ -79,14 +106,20 @@ export function FormularioNovoAgendamento({
 
         <div>
           <Label htmlFor="data">Data</Label>
-          <Input id="data" name="data" type="date" defaultValue={dataSelecionada} required />
+          <Input id="data" name="data" type="date" value={data} onChange={(evento) => setData(evento.target.value)} required />
         </div>
 
         <div>
           <Label htmlFor="hora">Hora</Label>
-          <Input id="hora" name="hora" type="time" required />
+          <Input id="hora" name="hora" type="time" value={hora} onChange={(evento) => setHora(evento.target.value)} required />
         </div>
       </div>
+
+      {foraDoExpediente && ( // só avisa, não impede o envio: o dono pode querer encaixar alguém fora do horário cadastrado
+        <p className="rounded-lg border border-aviso/40 bg-aviso/10 px-3 py-2 text-sm text-aviso">
+          Fora do expediente cadastrado deste barbeiro
+        </p>
+      )}
 
       <div>
         <Label htmlFor="observacao">Observação (opcional)</Label>
