@@ -140,7 +140,10 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
             <Card key={agendamento.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-col gap-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-display text-base font-semibold text-texto">
+                  {/* números (horário) NUNCA usam a fonte de título (Playfair): os algarismos dela têm altura
+                      irregular e ficam difíceis de ler; "tabular-nums" deixa cada dígito com a mesma largura,
+                      pra números não "dançarem" ao lado uns dos outros */}
+                  <span className="text-base font-bold tabular-nums text-texto">
                     {formatarHora(agendamento.inicio)}–{formatarHora(agendamento.fim)}
                   </span>
                   <Badge variante={configStatus.variante}>{configStatus.rotulo}</Badge>
@@ -152,7 +155,7 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
                   {agendamento.servico?.nome} · {agendamento.barbeiro?.nome} {/* serviço escolhido e quem vai atender */}
                 </span>
                 <span className="text-xs text-texto-secundario">
-                  R$ {centavosParaReais(agendamento.preco_centavos)}
+                  R$ <span className="font-bold tabular-nums">{centavosParaReais(agendamento.preco_centavos)}</span> {/* preço também é número: mesma regra */}
                   {agendamento.observacao && ` · ${agendamento.observacao}`}
                 </span>
               </div>

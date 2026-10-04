@@ -80,7 +80,8 @@ export default async function PaginaHorarios(props: PageProps<"/painel/horarios"
                   key={intervalo.id}
                   className="flex items-center justify-between rounded-lg border border-borda px-3 py-2 text-sm"
                 >
-                  <span className="text-texto">
+                  {/* horário é número: tabular-nums alinha os dígitos, font-bold reforça a leitura */}
+                  <span className="font-bold tabular-nums text-texto">
                     {intervalo.inicio.slice(0, 5)} às {intervalo.fim.slice(0, 5)} {/* "08:00:00" -> "08:00" */}
                   </span>
                   <form action={removerIntervalo.bind(null, intervalo.id)}>
