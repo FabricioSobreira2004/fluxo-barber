@@ -1,26 +1,41 @@
-@import "tailwindcss";
+@import "tailwindcss"; /* carrega as classes utilitárias do Tailwind (bg-, text-, flex, etc.) */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* paleta "barbearia premium": preto profundo + dourado, poucas cores bem definidas */
+  --color-fundo: #0b0b0b; /* fundo geral de toda a aplicação */
+  --color-superficie: #151515; /* fundo de cards, menus e inputs (um pouco mais claro que o fundo) */
+  --color-borda: #2a2a2a; /* cor das bordas finas que separam os blocos */
+  --color-dourado: #c9a227; /* dourado principal: botões primários, links ativos, destaques */
+  --color-dourado-claro: #e0c068; /* dourado mais claro: usado no hover dos elementos dourados */
+  --color-dourado-escuro: #9c7c1c; /* dourado mais escuro: variação para textos/ícones sobre fundo claro */
+  --color-texto: #f5f5f5; /* texto principal, quase branco para ler bem sobre o fundo escuro */
+  --color-texto-secundario: #a3a3a3; /* texto de apoio (legendas, descrições) */
+  --color-sucesso: #4ade80; /* feedback positivo, ex: agendamento confirmado */
+  --color-erro: #f87171; /* feedback de erro, ex: formulário inválido */
+  --color-aviso: #fbbf24; /* feedback de atenção, ex: pendência */
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* registra cada cor como um "token" do Tailwind, gerando classes como bg-dourado, text-erro etc. */
+  --color-fundo: var(--color-fundo);
+  --color-superficie: var(--color-superficie);
+  --color-borda: var(--color-borda);
+  --color-dourado: var(--color-dourado);
+  --color-dourado-claro: var(--color-dourado-claro);
+  --color-dourado-escuro: var(--color-dourado-escuro);
+  --color-texto: var(--color-texto);
+  --color-texto-secundario: var(--color-texto-secundario);
+  --color-sucesso: var(--color-sucesso);
+  --color-erro: var(--color-erro);
+  --color-aviso: var(--color-aviso);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* registra as fontes como tokens, usando a variável que o next/font define no layout */
+  --font-display: var(--font-playfair); /* fonte dos títulos (elegante, estilo "placa de barbearia") */
+  --font-sans: var(--font-inter); /* fonte do texto corrido (legibilidade em tela) */
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-fundo); /* todo o site usa o fundo preto da identidade visual */
+  color: var(--color-texto); /* texto claro por padrão, para contrastar com o fundo escuro */
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif; /* Inter como fonte padrão do corpo */
 }
