@@ -9,6 +9,21 @@ import { CONFIG_STATUS, type StatusAgendamento } from "@/utils/status-agendament
 import { FormularioNovoAgendamento } from "./FormularioNovoAgendamento"; // formulário (Client Component) de criação
 import { BotoesStatus } from "./BotoesStatus"; // botões de mudar status de cada agendamento
 
+interface AgendamentoComRelacionamentos { // formato real de cada linha devolvida pela consulta com relacionamentos abaixo
+  id: string;
+  inicio: string;
+  fim: string;
+  preco_centavos: number;
+  status: string;
+  observacao: string | null;
+  // o Postgres liga agendamentos -> barbeiros/clientes/servicos por uma chave estrangeira "pra um só" registro
+  // (ex: um agendamento tem UM barbeiro), então o Supabase devolve cada um como OBJETO único, não como lista;
+  // sem os tipos gerados do banco (não fizemos esse passo), o TypeScript não sabe disso e por isso declaramos aqui na mão
+  barbeiro: { nome: string } | null;
+  cliente: { nome: string; telefone: string } | null;
+  servico: { nome: string } | null;
+}
+
 export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
   const { supabase, barbeariaId } = await obterBarbeariaAtual(); // garante login e descobre em qual barbearia buscar
   const parametros = await props.searchParams; // searchParams é uma Promise no Next.js 16, por isso o await
@@ -55,7 +70,9 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
     consultaAgendamentos = consultaAgendamentos.eq("barbeiro_id", barbeiroFiltroId);
   }
 
-  const { data: agendamentos } = await consultaAgendamentos;
+  const { data: agendamentosBrutos } = await consultaAgendamentos;
+  // reafirma pro TypeScript o formato real (objeto único em cada relacionamento, não lista) — ver comentário na interface acima
+  const agendamentos = (agendamentosBrutos ?? []) as unknown as AgendamentoComRelacionamentos[];
 
   const diaAnterior = somarDias(dataSelecionada, -1); // pra onde a seta "<" deve levar
   const diaSeguinte = somarDias(dataSelecionada, 1); // pra onde a seta ">" deve levar
@@ -114,7 +131,7 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
       </div>
 
       <div className="flex flex-col gap-3"> {/* lista dos agendamentos do dia, em ordem cronológica */}
-        {(agendamentos ?? []).map((agendamento) => {
+        {agendamentos.map((agendamento) => {
           const status = agendamento.status as StatusAgendamento; // o banco garante (via enum) que só vem um desses 5 valores
           const configStatus = CONFIG_STATUS[status];
 
@@ -128,9 +145,10 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
                   <Badge variante={configStatus.variante}>{configStatus.rotulo}</Badge>
                 </div>
                 <span className="text-sm text-texto">
-                  {/* sem tipos gerados do banco, o Supabase tipa cada relação embutida como array; aqui ela sempre tem 0 ou 1 item (FK simples) */}
-                  {agendamento.cliente?.[0]?.nome} · {agendamento.servico?.[0]?.nome}
-                  {!barbeiroFiltroId && ` · ${agendamento.barbeiro?.[0]?.nome}`} {/* mostra o nome do barbeiro só quando a lista mistura vários */}
+                  {agendamento.cliente?.nome} · {agendamento.cliente?.telefone} {/* nome e telefone de quem vai ser atendido */}
+                </span>
+                <span className="text-sm text-texto-secundario">
+                  {agendamento.servico?.nome} · {agendamento.barbeiro?.nome} {/* serviço escolhido e quem vai atender */}
                 </span>
                 <span className="text-xs text-texto-secundario">
                   R$ {centavosParaReais(agendamento.preco_centavos)}
@@ -143,7 +161,7 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
           );
         })}
 
-        {(agendamentos ?? []).length === 0 && ( // mensagem amigável quando não há nada marcado nesse dia
+        {agendamentos.length === 0 && ( // mensagem amigável quando não há nada marcado nesse dia
           <p className="text-sm text-texto-secundario">Nenhum agendamento nesse dia.</p>
         )}
       </div>
