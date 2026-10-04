@@ -28,8 +28,17 @@ export function formatarHora(timestamptz: string): string { // ex: "2026-10-04T1
   return new Date(timestamptz).toLocaleTimeString("pt-BR", { timeZone: FUSO_BRASIL, hour: "2-digit", minute: "2-digit" });
 }
 
-export function formatarDataLonga(dataISO: string): string { // ex: "2026-10-04" -> "sábado, 4 de outubro de 2026"
+export function formatarDataLonga(dataISO: string): string { // ex: "2026-10-04" -> "Domingo, 4 de outubro de 2026"
   const [ano, mes, dia] = dataISO.split("-").map(Number);
   const data = new Date(Date.UTC(ano, mes - 1, dia, 12)); // meio-dia UTC: evita cair no dia errado por causa do fuso horário
-  return data.toLocaleDateString("pt-BR", { timeZone: FUSO_BRASIL, weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const textoPorExtenso = data.toLocaleDateString("pt-BR", { // o pt-BR do navegador devolve tudo em minúsculas, ex: "domingo, 4 de outubro de 2026"
+    timeZone: FUSO_BRASIL,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  // deixa maiúscula só a primeira letra (padrão do português), em vez de usar CSS "capitalize"
+  // (que deixaria TODA palavra maiúscula, incluindo "De Outubro De" — errado em português)
+  return textoPorExtenso.charAt(0).toUpperCase() + textoPorExtenso.slice(1);
 }

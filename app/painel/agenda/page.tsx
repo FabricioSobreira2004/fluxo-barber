@@ -91,7 +91,8 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
           </Link>
-          <span className="text-sm capitalize text-texto">{formatarDataLonga(dataSelecionada)}</span>
+          {/* sem "capitalize" aqui: essa classe deixaria TODA palavra maiúscula; formatarDataLonga já devolve só a 1ª letra maiúscula */}
+          <span className="text-sm text-texto">{formatarDataLonga(dataSelecionada)}</span>
           <Link
             href={`/painel/agenda?data=${diaSeguinte}${sufixoBarbeiro}`}
             className="rounded-lg border border-borda p-2 text-texto-secundario transition-colors hover:text-texto"
