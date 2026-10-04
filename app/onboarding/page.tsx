@@ -1,16 +1,30 @@
+import { redirect } from "next/navigation"; // usado pra pular o onboarding de quem já tem barbearia
 import { createClient } from "@/utils/supabase/server"; // cliente Supabase do lado servidor
-import { BotaoSair } from "@/components/BotaoSair"; // botão de logout
+import { AuthCard } from "@/components/AuthCard"; // layout compartilhado das telas de autenticação/onboarding
+import { FormularioOnboarding } from "./FormularioOnboarding"; // formulário (Client Component) de criar barbearia
 
-export default async function PaginaOnboarding() { // TODO (etapa 8): formulário de criar barbearia + redirecionamento automático
+export default async function PaginaOnboarding() {
   const supabase = await createClient(); // conexão com o Supabase usando os cookies desta visita
-  const { data } = await supabase.auth.getUser(); // o proxy já garante que existe usuário logado aqui; isso só confirma pra tela
+  const { data: { user } } = await supabase.auth.getUser(); // o proxy já garante login; isso só confirma pro TypeScript
+
+  if (!user) { // defesa extra: se por algum motivo não houver usuário, manda pro login em vez de quebrar a página
+    redirect("/login");
+  }
+
+  const { data: membro } = await supabase // verifica se esse usuário já é membro de alguma barbearia
+    .from("membros")
+    .select("barbearia_id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle(); // devolve null (em vez de erro) quando não encontra nenhuma linha
+
+  if (membro) { // já tem barbearia: não faz sentido passar pelo onboarding de novo
+    redirect("/painel");
+  }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
-      <p className="text-texto-secundario">
-        Onboarding em construção. Logado como <span className="text-texto">{data.user?.email}</span>.
-      </p>
-      <BotaoSair />
-    </main>
+    <AuthCard titulo="Crie sua barbearia">
+      <FormularioOnboarding />
+    </AuthCard>
   );
 }
