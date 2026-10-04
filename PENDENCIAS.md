@@ -46,3 +46,29 @@ erro "over_email_send_rate_limit" só de testar o cadastro 2 vezes seguidas).
    - **Lembre de religar essa opção antes de colocar o sistema no ar pra
      clientes de verdade**, senão qualquer pessoa cadastra uma conta com
      email de outra pessoa sem precisar confirmar nada.
+
+## Etapa 14 — Rodar o SQL da página pública de agendamento
+
+**O que é:** a página `/b/[slug]` (onde o cliente agenda sozinho, sem login)
+depende de 5 funções do banco que **ainda não existem no seu Supabase**.
+Elas estão escritas em `supabase/migrations/002_agendamento_publico.sql`,
+mas eu não tenho acesso ao painel pra executar esse SQL — só você pode.
+
+**Por que precisa de funções especiais:** o RLS das tabelas exige que quem
+lê/escreve seja um "membro" da barbearia (`eh_membro`). Um cliente agendando
+pela internet não está logado, então ele não passaria nessa checagem. As
+funções em `002_agendamento_publico.sql` rodam como "security definer"
+(ignoram o RLS), mas cada uma devolve só o que é seguro mostrar
+publicamente — nunca dados de outros clientes.
+
+**O que fazer:**
+1. Abra o **SQL Editor** no painel do Supabase.
+2. Copie todo o conteúdo do arquivo `supabase/migrations/002_agendamento_publico.sql`
+   deste projeto e execute.
+3. Pronto — a partir daí, `/b/<slug-da-sua-barbearia>` já funciona pra
+   qualquer visitante agendar um horário.
+
+**Sem rodar esse SQL:** a página `/b/[slug]` ainda abre, mas mostra "página
+não encontrada" (404) pra qualquer slug, porque a primeira função
+(`buscar_barbearia_publica`) não existe ainda — isso é esperado e não é bug,
+é só a pendência acima.
