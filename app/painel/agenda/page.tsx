@@ -2,27 +2,10 @@ import Link from "next/link"; // navegação entre dias e barbeiros, via queryst
 import { ChevronLeft, ChevronRight } from "lucide-react"; // setas de navegação entre dias
 import { obterBarbeariaAtual } from "@/utils/supabase/barbearia-atual"; // descobre a barbearia do usuário logado
 import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
-import { Badge } from "@/components/ui/Badge"; // etiqueta colorida de status
-import { centavosParaReais } from "@/utils/dinheiro"; // formata o preço (guardado em centavos) pra exibição
-import { hojeISO, somarDias, limitesDoDia, formatarHora, formatarDataLonga } from "@/utils/data"; // utilitários de data/hora no fuso do Brasil
-import { CONFIG_STATUS, type StatusAgendamento } from "@/utils/status-agendamento"; // cor/rótulo de cada status
+import { hojeISO, somarDias, limitesDoDia, formatarDataLonga } from "@/utils/data"; // utilitários de data/hora no fuso do Brasil
 import { FormularioNovoAgendamento } from "./FormularioNovoAgendamento"; // formulário (Client Component) de criação
-import { BotoesStatus } from "./BotoesStatus"; // botões de mudar status de cada agendamento
-
-interface AgendamentoComRelacionamentos { // formato real de cada linha devolvida pela consulta com relacionamentos abaixo
-  id: string;
-  inicio: string;
-  fim: string;
-  preco_centavos: number;
-  status: string;
-  observacao: string | null;
-  // o Postgres liga agendamentos -> barbeiros/clientes/servicos por uma chave estrangeira "pra um só" registro
-  // (ex: um agendamento tem UM barbeiro), então o Supabase devolve cada um como OBJETO único, não como lista;
-  // sem os tipos gerados do banco (não fizemos esse passo), o TypeScript não sabe disso e por isso declaramos aqui na mão
-  barbeiro: { nome: string } | null;
-  cliente: { nome: string; telefone: string } | null;
-  servico: { nome: string } | null;
-}
+import { CardAgendamento } from "./CardAgendamento"; // card visual de cada agendamento da lista
+import { type AgendamentoComRelacionamentos } from "./tipos"; // formato da linha vinda do banco, com os relacionamentos
 
 export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
   const { supabase, barbeariaId } = await obterBarbeariaAtual(); // garante login e descobre em qual barbearia buscar
@@ -132,38 +115,9 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
       </div>
 
       <div className="flex flex-col gap-3"> {/* lista dos agendamentos do dia, em ordem cronológica */}
-        {agendamentos.map((agendamento) => {
-          const status = agendamento.status as StatusAgendamento; // o banco garante (via enum) que só vem um desses 5 valores
-          const configStatus = CONFIG_STATUS[status];
-
-          return (
-            <Card key={agendamento.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-col gap-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* números (horário) NUNCA usam a fonte de título (Playfair): os algarismos dela têm altura
-                      irregular e ficam difíceis de ler; "tabular-nums" deixa cada dígito com a mesma largura,
-                      pra números não "dançarem" ao lado uns dos outros */}
-                  <span className="text-base font-bold tabular-nums text-texto">
-                    {formatarHora(agendamento.inicio)}–{formatarHora(agendamento.fim)}
-                  </span>
-                  <Badge variante={configStatus.variante}>{configStatus.rotulo}</Badge>
-                </div>
-                <span className="text-sm text-texto">
-                  {agendamento.cliente?.nome} · {agendamento.cliente?.telefone} {/* nome e telefone de quem vai ser atendido */}
-                </span>
-                <span className="text-sm text-texto-secundario">
-                  {agendamento.servico?.nome} · {agendamento.barbeiro?.nome} {/* serviço escolhido e quem vai atender */}
-                </span>
-                <span className="text-xs text-texto-secundario">
-                  R$ <span className="font-bold tabular-nums">{centavosParaReais(agendamento.preco_centavos)}</span> {/* preço também é número: mesma regra */}
-                  {agendamento.observacao && ` · ${agendamento.observacao}`}
-                </span>
-              </div>
-
-              <BotoesStatus id={agendamento.id} status={status} />
-            </Card>
-          );
-        })}
+        {agendamentos.map((agendamento) => (
+          <CardAgendamento key={agendamento.id} agendamento={agendamento} />
+        ))}
 
         {agendamentos.length === 0 && ( // mensagem amigável quando não há nada marcado nesse dia
           <p className="text-sm text-texto-secundario">Nenhum agendamento nesse dia.</p>

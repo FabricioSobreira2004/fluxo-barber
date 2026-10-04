@@ -29,6 +29,11 @@ export function diaDaSemana(dataISO: string): number { // "2026-10-04" -> 0 (dom
   return new Date(Date.UTC(ano, mes - 1, dia, 12)).getUTCDay(); // meio-dia UTC: o dia da semana não muda em nenhum fuso horário razoável
 }
 
+export function duracaoEmMinutos(inicioTz: string, fimTz: string): number { // diferença entre dois timestamps, em minutos inteiros
+  const diferencaMs = new Date(fimTz).getTime() - new Date(inicioTz).getTime(); // diferença em milissegundos
+  return Math.round(diferencaMs / 60000); // 60000ms = 1 minuto
+}
+
 export function formatarHora(timestamptz: string): string { // ex: "2026-10-04T11:00:00+00:00" -> "08:00" (já convertido pro fuso de Brasília)
   return new Date(timestamptz).toLocaleTimeString("pt-BR", { timeZone: FUSO_BRASIL, hour: "2-digit", minute: "2-digit" });
 }
