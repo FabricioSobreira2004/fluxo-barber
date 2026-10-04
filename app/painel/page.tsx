@@ -1,9 +1,5 @@
-import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
+import { redirect } from "next/navigation"; // a home do painel é a agenda; isso só redireciona pra lá
 
-export default function PaginaPainel() { // TODO (etapa 13): redirecionar pra /painel/agenda quando a agenda existir
-  return (
-    <Card>
-      <p className="text-texto-secundario">Em breve: a agenda vai aparecer aqui.</p>
-    </Card>
-  );
+export default function PaginaPainel() {
+  redirect("/painel/agenda");
 }
