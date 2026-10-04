@@ -25,7 +25,7 @@ export async function updateSession(request: NextRequest) { // função chamada 
     }
   );
 
-  await supabase.auth.getUser(); // força checar/renovar o login agora; se não chamar isso, a sessão pode expirar sem avisar
+  const { data } = await supabase.auth.getUser(); // força checar/renovar o login agora e já aproveita pra saber quem está logado
 
-  return supabaseResponse; // devolve a resposta (com os cookies de sessão já atualizados, se foi o caso)
+  return { response: supabaseResponse, user: data.user }; // devolve a resposta e o usuário (ou null), pra quem chamou decidir se protege a rota
 }

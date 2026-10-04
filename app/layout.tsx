@@ -23,7 +23,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) { // envolve 
       lang="pt-BR" // avisa o navegador/leitores de tela que o conteúdo é em português do Brasil
       className={`${playfair.variable} ${inter.variable} h-full antialiased`} // disponibiliza as fontes como variáveis CSS para toda a página
     >
-      <body className="min-h-full flex flex-col">{children}</body> {/* corpo ocupa a tela toda, empilhado verticalmente */}
+      {/* corpo ocupa a tela toda, empilhado verticalmente */}
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }
