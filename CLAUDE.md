@@ -16,6 +16,7 @@ está aprendendo banco de dados agora — por isso toda explicação deve ser di
 - Não rodar "npm audit fix --force".
 - Consultar a documentação atual do Next.js e do Supabase quando houver dúvida
   de API (ex: middleware vs proxy no Next.js 16).
+- Ao final de cada lote de trabalho, rodar "git push" para publicar na Vercel.
 
 ## STACK
 - Next.js 16 (App Router, TypeScript, Tailwind, ESLint, SEM pasta src/)
