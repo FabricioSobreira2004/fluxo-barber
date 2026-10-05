@@ -14,12 +14,21 @@ rodada em "Concluído", "Para fazer agora" e "Pré-lançamento".
 
 Criei `supabase/seeds/demo_barbearia.sql` — **não rodei em lugar nenhum**, é só
 pra você revisar e colar no SQL Editor do Supabase quando quiser. Resumo do que
-ele cria: 1 barbearia, 3 barbeiros, 8 serviços, horário terça-sábado, 25
-clientes fictícios, e agendamentos dos últimos ~30 dias + dos próximos 5 dias
-(mais movimento sexta/sábado, como pedido). Todo o SQL está comentado linha a
-linha, explicando o porquê de cada parte — os detalhes técnicos (por que cada
-constraint é respeitada, como a geração evita sobreposição de horário, etc.)
-estão nos comentários do próprio arquivo, pra não duplicar aqui.
+ele cria: 1 barbearia, 3 barbeiros, 8 serviços, horário terça-sábado, 120
+clientes fictícios (nomes masculinos, já que é barbearia), e agendamentos dos
+últimos ~30 dias + do **dia de hoje** (parte já passada, parte ainda por vir) +
+dos próximos 5 dias (mais movimento sexta/sábado, como pedido). Cada cliente
+tem um limite de visitas realista (a maioria 1 a 3 no período, uns 10 a 15
+"fiéis" com 4 a 6, nunca mais que isso), e o "Corte Infantil" só é sorteado
+pros 5 clientes marcados como pais. Os telefones dos clientes usam o prefixo
+fictício `1190000` + 4 dígitos sequenciais (nunca um número de verdade por
+acidente); o telefone da PRÓPRIA barbearia vem como `'SEU_NUMERO'`, um
+placeholder — troque pelo seu WhatsApp de verdade antes de rodar, é pra ele
+que o botão "Falar com a barbearia" da página pública liga. Todo o SQL está
+comentado linha a linha, explicando o porquê de cada parte — os detalhes
+técnicos (por que cada constraint é respeitada, como a geração evita
+sobreposição de horário, etc.) estão nos comentários do próprio arquivo, pra
+não duplicar aqui.
 
 ### As 3 sugestões de nome
 
@@ -80,6 +89,37 @@ fica vazia pra essa barbearia até você fazer esse último passo na mão.
 e o vínculo em `membros`) — a conta de login em si (`auth.users`) continua
 existindo, seria apagada separadamente em Authentication → Users, se também
 não quiser mais usá-la.
+
+### Recriar a demo no dia de cada apresentação
+
+O seed gera os agendamentos **relativos a "hoje"** (a data em que você roda o
+SQL Editor): "últimos 30 dias", "hoje" e "próximos 5 dias" são sempre
+calculados a partir do momento da execução. Ou seja, se você rodar o arquivo
+de novo bem antes de uma apresentação, a janela toda se desloca sozinha —
+você não precisa editar nenhuma data na mão. Pra recriar a demo "fresca" no
+dia de uma apresentação, rode estes 2 comandos **nessa ordem**, no SQL Editor:
+
+1. Apagar a demonstração antiga:
+   ```sql
+   delete from barbearias where slug = 'demo';
+   ```
+2. Colar e rodar o conteúdo inteiro de `supabase/seeds/demo_barbearia.sql` de novo
+   (ele recria tudo do zero, já com a janela de datas atualizada pro dia atual).
+
+**⚠️ Atenção:** o `delete` do passo 1 usa `on delete cascade`, então ele apaga
+**também** o vínculo em `membros` — ou seja, depois de recriar a demo, a sua
+conta deixa de ser "dona" dela até você religar esse vínculo de novo. Duas
+formas de resolver isso:
+
+- **Repetir o passo 3** da seção anterior ("Como ligar a barbearia de
+  demonstração à sua conta"), buscando o id da sua conta de novo e colando no
+  `insert into membros`; ou
+- **Usar o atalho já pronto** no final do próprio `demo_barbearia.sql`: há um
+  bloco comentado que já faz o `insert into membros` buscando o id da sua
+  conta diretamente pelo email (sem precisar copiar/colar nenhum id na mão).
+  Basta descomentar esse bloco, trocar `'SEU_EMAIL_AQUI'` pelo email de
+  verdade da sua conta, e rodar — fica pronto pra usar em toda recriação
+  futura, sem repetir o passo a passo manual.
 
 ---
 
