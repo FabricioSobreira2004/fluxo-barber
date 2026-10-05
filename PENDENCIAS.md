@@ -47,6 +47,32 @@ erro "over_email_send_rate_limit" só de testar o cadastro 2 vezes seguidas).
      clientes de verdade**, senão qualquer pessoa cadastra uma conta com
      email de outra pessoa sem precisar confirmar nada.
 
+## ⚠️ Nova rodada — Rodar a migration 003 (PRIORIDADE)
+
+**O que é:** `supabase/migrations/003_padronizacao_e_correcoes.sql` padroniza
+o telefone dos clientes (só dígitos), valida nome/telefone nas funções
+públicas, corrige um bug de virada da meia-noite em
+`criar_agendamento_publico`, e trava spam (máx. 3 agendamentos futuros por
+telefone na mesma barbearia).
+
+**Por que precisa rodar manualmente:** altera dados existentes (normaliza
+telefones já cadastrados) e cria uma constraint — não posso executar isso
+no seu banco, só você.
+
+**O que fazer:**
+1. Abra o **SQL Editor** no painel do Supabase.
+2. Copie todo o conteúdo de `supabase/migrations/003_padronizacao_e_correcoes.sql`
+   e execute.
+3. **Atenção:** se você já tem clientes cadastrados com o mesmo telefone
+   escrito de formas diferentes (ex: "(21) 99016-3583" e "21990163583" na
+   mesma barbearia), o script vai PARAR com uma mensagem de erro explicando
+   como encontrar e resolver essas duplicatas antes de rodar de novo — isso
+   é intencional, pra não arriscar misturar o histórico de dois clientes
+   diferentes automaticamente.
+4. Sem rodar essa migration, o site continua funcionando como antes (as
+   funções antigas continuam no banco), mas sem as correções e validações
+   novas.
+
 ## Etapa 14 — Rodar o SQL da página pública de agendamento
 
 **O que é:** a página `/b/[slug]` (onde o cliente agenda sozinho, sem login)
