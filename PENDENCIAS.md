@@ -12,42 +12,40 @@ no SQL Editor. Testei as funções públicas depois disso — veja o resultado
 completo em `TESTES.md`. Resumo: toda validação de nome/telefone funcionou
 certinho.
 
-## ⚠️ PRIORIDADE — Rodar a migration 004 (corrige o "+55")
+## ✅ Migration 004 — já aplicada (e os comentários do arquivo foram revisados)
 
-**O que é:** `supabase/migrations/004_telefone_55.sql` corrige um bug que
-encontrei testando: um telefone digitado com o código do país
-(`"+55 21 99016-3583"` ou até só `"55 21 99016-3583"`, sem o `+`) era
-**recusado por engano**, porque o `"55"` ficava colado no número depois da
-normalização (virava 13 dígitos em vez de 11). Comprovei esse comportamento
-no teste "extra" do `TESTES.md`.
+Você confirmou que já rodou `supabase/migrations/004_telefone_55.sql` e
+que o telefone com `+55` agora é aceito corretamente — reconfirmei isso nos
+testes desta rodada (`TESTES.md`).
 
-**O que fazer:**
-1. Abra o **SQL Editor** no painel do Supabase.
-2. Copie todo o conteúdo de `supabase/migrations/004_telefone_55.sql` e
-   execute (usa `create or replace`, mesma assinatura — não precisa mudar
-   nada no site).
-3. Essa migration **depende da 003 já estar aplicada** (ela já está, então
-   pode rodar a 004 direto).
-4. O site já está pronto do lado dele: `utils/telefone.ts` já trata o
-   `"+55"` corretamente (com testes em `utils/telefone.test.ts`, rode
-   `npm test` pra conferir). Só falta essa parte no banco.
+**Atualizei só os COMENTÁRIOS do arquivo** (a lógica em si não mudou, então
+**não precisa rodar de novo no banco**):
+- O comentário antigo dizia "nenhum DDD brasileiro começa com 55", o que
+  está errado (o DDD 55 existe, é de Santa Maria/RS). Troquei pela
+  explicação correta: a regra só entra em ação quando sobram 12 ou 13
+  dígitos, e um número do DDD 55 digitado *sem* código do país sempre tem
+  10 ou 11 dígitos (não é afetado); digitado *com* `+55`, vira 13 dígitos e
+  só os 2 primeiros (o código do país) são removidos — o DDD 55 real
+  continua intacto nos dígitos que sobram.
+- Recolei os comentários linha a linha que essa migration tinha perdido em
+  relação à 003 (ex: explicação de cada validação, da trava de conflito de
+  horário, do anti-spam).
 
-## ⚠️ Pra completar os testes — cadastre horário de trabalho do "barbeiro1test"
+## ⚠️ Apagar os dados de teste
 
-**O que é:** testando as funções públicas (`TESTES.md`), descobri que o
-barbeiro "barbeiro1test" da barbearia de teste **não tem nenhum horário de
-trabalho cadastrado** em `horarios_trabalho`. Por causa disso, 7 dos 13
-testes não puderam ser completados (tudo que depende de conseguir criar um
-agendamento de verdade: anti-spam, conflito de horário, fronteira do
-expediente, `listar_horarios_livres`, e os casos de nome/telefone *válidos*).
+Diferente da rodada anterior, desta vez os testes **criaram agendamentos de
+verdade** no banco (21 de 21 testes passaram — ver `TESTES.md`). Tem um
+SQL pronto em `TESTES.md`, com um **SELECT de conferência primeiro** (pra
+você ver exatamente o que vai ser apagado antes de apagar) e depois o
+DELETE na ordem certa (agendamentos, depois clientes).
 
-**O que fazer:**
-1. Entre no painel (`/painel/horarios`) com a conta de teste.
-2. Selecione "barbeiro1test".
-3. Adicione pelo menos 1 intervalo de horário em pelo menos 1 dia da semana
-   (ex: segunda a sexta, 08:00 às 18:00).
-4. Me avise, ou rode você mesmo: `node scripts/testar-funcoes-publicas.mjs`
-   — o script já está pronto no projeto e usa só a Publishable key.
+## ⚠️ Horário de teste do domingo — lembre de remover depois dos testes
+
+Você cadastrou um horário de teste pro "barbeiro1test" no **domingo,
+20:00–23:59**, só pra eu testar a virada da meia-noite (ver `TESTES.md`).
+Se você não for usar esse horário de verdade, **lembre de apagá-lo** em
+`/painel/horarios` depois que terminar de conferir os testes — senão a
+barbearia vai aparecer como "aberta" domingo à noite na página pública.
 
 ## Etapa 5 — Schema versionado
 
@@ -123,31 +121,56 @@ senha" → `/esqueci-senha` (pede o email) → Supabase manda um email →
 
 ## Nova rodada — Gerar os tipos do banco pela CLI do Supabase (opcional)
 
-**O que é:** o site agora usa tipos TypeScript do banco (`utils/supabase/database.types.ts`)
+**O que é:** o site usa tipos TypeScript do banco (`utils/supabase/database.types.ts`)
 nos dois clientes do Supabase (`utils/supabase/server.ts` e `client.ts`) — isso faz
 `.from("tabela").select(...)` e `.rpc(...)` virem com autocomplete e checagem de tipo.
 
-**Por que escrevi esse arquivo na mão:** o comando oficial (`supabase gen types
-typescript`) precisa de login na CLI (`supabase login`), que abre o navegador —
-e eu não tenho como fazer isso por você. Então escrevi `database.types.ts` no
-mesmo formato que a CLI geraria, a partir do schema das migrations 001 a 003.
-Ele já funciona normalmente; rodar a CLI é opcional, só pra ter 100% de certeza
-de que bate com o banco real (ex: se você alterar uma coluna direto no painel
-sem criar uma migration nova).
+**Tentei gerar de verdade nesta rodada** com:
+```
+npx supabase gen types typescript --project-id bvspfjhcooygqfsgirnu
+```
+e, como esperado, bateu nisto:
+```
+AccessTokenRequiredError: Access token not provided. Supply an access token by
+running `supabase login` or setting the SUPABASE_ACCESS_TOKEN environment variable.
+```
+Isso exige abrir um navegador e logar na sua conta Supabase — não consigo
+fazer isso por você. `database.types.ts` continua escrito à mão, no mesmo
+formato que a CLI geraria, a partir do schema das migrations 001 a 004 (a
+004 só mudou lógica interna da função, não mudou a assinatura dela nem
+nenhuma tabela, então o arquivo de tipos continua correto sem alteração).
 
-**Se quiser gerar pela CLI de verdade:**
-1. No terminal, dentro da pasta do projeto, rode `npx supabase login` — ele abre
-   o navegador pra você autorizar o acesso.
+**Se quiser gerar pela CLI de verdade, 2 jeitos:**
+
+**Opção A — login interativo (mais simples):**
+1. No terminal, dentro da pasta do projeto, rode `npx supabase login` — ele
+   abre o navegador pra você autorizar o acesso e salva o login localmente.
 2. Depois, rode:
    ```
    npx supabase gen types typescript --project-id bvspfjhcooygqfsgirnu > utils/supabase/database.types.ts
    ```
-   (o `--project-id` já é o do seu projeto, lido do `.env.local`.)
-3. Esse comando SUBSTITUI o arquivo inteiro — tudo bem, porque os "atalhos"
-   (`Tabelas`, `NovaLinha`, etc.) que escrevi no final do arquivo não existem
-   no banco, então você precisaria colar essas ~15 linhas de volta no fim do
-   arquivo depois de gerar (procure a seção "Atalhos" neste mesmo arquivo pra
-   copiar antes de substituir, ou me avise depois que eu colo de novo).
+
+**Opção B — gerando um token de acesso manualmente (se o navegador não abrir,
+ex: rodando num servidor remoto):**
+1. Acesse **https://supabase.com/dashboard/account/tokens** (menu da sua
+   conta → **Access Tokens**).
+2. Clique em **Generate new token**, dê um nome (ex: "cli-local") e copie o
+   token gerado (começa com `sbp_...`) — ele só aparece uma vez.
+3. No terminal, dentro da pasta do projeto:
+   ```
+   SUPABASE_ACCESS_TOKEN=sbp_seu_token_aqui npx supabase gen types typescript --project-id bvspfjhcooygqfsgirnu > utils/supabase/database.types.ts
+   ```
+   (no PowerShell: `$env:SUPABASE_ACCESS_TOKEN="sbp_seu_token_aqui"` numa
+   linha, e o comando `npx supabase gen types ...` na linha seguinte.)
+4. Guarde esse token como uma senha (dá acesso à sua conta Supabase pela
+   CLI) — não cole ele em nenhum arquivo do projeto.
+
+**Depois de gerar, dos dois jeitos:** esse comando SUBSTITUI o arquivo
+inteiro — os "atalhos" (`Tabelas`, `NovaLinha`, `AtualizacaoLinha`,
+`TipoEnum`) que escrevi no final do arquivo não existem no banco, então
+precisaria colar essas ~15 linhas de volta no fim do arquivo depois de
+gerar (procure a seção "Atalhos" no `database.types.ts` atual pra copiar
+antes de substituir, ou me avise depois que eu colo de novo).
 
 ## Etapa 14 — Rodar o SQL da página pública de agendamento
 

@@ -2,48 +2,61 @@
 
 Testes feitos simulando exatamente um visitante sem login: só com a
 **Publishable key** (nunca a Secret key), chamando as funções via
-`supabase.rpc(...)`, do mesmo jeito que `app/b/[slug]/actions.ts` faz.
+`supabase.rpc(...)`, do mesmo jeito que `app/b/[slug]/actions.ts` faz — e,
+na última parte, também diretamente na página pública pelo navegador.
 
 **Script usado:** `scripts/testar-funcoes-publicas.mjs` (roda com
-`node scripts/testar-funcoes-publicas.mjs`). Ele lê a URL e a Publishable
-key do seu `.env.local` — **não tem nenhuma chave escrita no código**, por
-isso decidi manter o script no projeto (pode rodar de novo quando quiser,
-em vez de eu ter que recriar tudo). Ele também é só leitura/escrita pública:
-não faz login, não usa a Secret key.
+`node scripts/testar-funcoes-publicas.mjs`). Lê a URL e a Publishable key
+do `.env.local` — **não tem nenhuma chave escrita nele**.
 
-**Barbearia de teste confirmada:** slug `barbearia-teste` → "barbearia
-teste" (id `d22399f1-8ec5-4f9b-9201-5bdd7dfb5608`), com 1 barbeiro
-("barbeiro1test") e 3 serviços ativos.
+**Confirmado:** migration 003 ✅ aplicada, migration 004 ✅ aplicada,
+horários de trabalho do "barbeiro1test" ✅ cadastrados (segunda a quinta e
+sábado 09:00–18:00, sexta 09:00–19:00, domingo 20:00–23:59).
 
 ---
 
-## ⚠️ Achado importante: o barbeiro de teste não tem horário de trabalho cadastrado
+## Nota sobre o método: rodei o script várias vezes, e isso teve um efeito colateral
 
-O script procurou horário livre pra "barbeiro1test", pra cada um dos 3
-serviços, nos próximos 10–14 dias, e **não achou nenhum** — isso significa
-que não existe nenhuma linha em `horarios_trabalho` pra esse barbeiro (você
-pode confirmar em `/painel/horarios`).
+Enquanto ajustava o script (ver seção "bugs encontrados e corrigidos"
+abaixo), rodei ele repetidas vezes contra o banco de verdade. Cada
+agendamento criado com sucesso **fica salvo de verdade** — e a trava de
+anti-spam (máx. 3 agendamentos futuros por telefone) é por telefone, não
+por "rodada de teste". Resultado: alguns dos meus próprios números de
+teste bateram no limite de 3 só de eu ter rodado o script 3-4 vezes
+seguidas enquanto corrigia bugs no script (não no banco).
 
-**Por que isso importa pros testes:** a função `criar_agendamento_publico`
-só deixa agendar um horário que caiba dentro de algum intervalo cadastrado
-(checagem de expediente). Sem nenhum intervalo cadastrado, **todo**
-agendamento é recusado nessa etapa — mesmo um com nome e telefone
-perfeitamente válidos. Por isso, os testes que *precisam* de um agendamento
-criado com sucesso (nome/telefone válidos, anti-spam, conflito de horário,
-fronteira do expediente, `listar_horarios_livres`) não puderam ser
-completados agora.
+Isso não é falha de nenhum teste — é, na prática, **mais uma confirmação
+de que o anti-spam funciona**, até debaixo de uso repetido "sem querer".
+Troquei o número de telefone de 1-2 sub-testes pra um ainda "zerado"
+quando isso aconteceu (ver comentários no script). A tabela abaixo junta o
+resultado de cada teste a partir da execução em que ele passou de forma
+limpa — todos passaram em pelo menos uma execução, a maioria em todas.
 
-Os testes de **validação** (nome/telefone *inválidos*, que devem ser
-recusados) não dependem disso — a validação de nome e telefone acontece
-**antes** da checagem de expediente — e todos rodaram normalmente.
+---
 
-**Para completar os testes que faltaram:** cadastre pelo menos um
-intervalo de horário de trabalho pro "barbeiro1test" em `/painel/horarios`
-(ex: segunda a sexta, 08:00 às 18:00) e rode o script de novo:
-```
-node scripts/testar-funcoes-publicas.mjs
-```
-(Já deixei essa pendência também anotada no `PENDENCIAS.md`.)
+## Bugs encontrados e corrigidos NO SCRIPT DE TESTE (não no banco)
+
+Durante os testes, encontrei 2 bugs — **os dois no meu script de teste em
+si, não em `criar_agendamento_publico` nem em nenhuma função do banco**:
+
+1. **Índices "velhos" de horário livre se sobrepunham.** Minha primeira
+   versão buscava a lista de horários livres **uma vez** e reaproveitava
+   índices próximos dela (`livres[0]`, `livres[1]`, `livres[2]`...) em
+   vários testes diferentes. Como o serviço padrão dura 30min e os
+   horários livres são gerados a cada 15min, dois índices vizinhos na
+   verdade **se sobrepõem** (ex: agendar às 09:00 e depois às 09:15 colide,
+   porque 09:00-09:30 e 09:15-09:45 se cruzam). Corrigido: agora o script
+   busca a lista de novo, na hora, antes de cada agendamento, e sempre usa
+   o primeiro horário realmente livre *naquele momento*.
+2. **"Último horário livre + 15min" podia cair em cima de outro
+   agendamento de teste**, em vez de cair fora do expediente de verdade —
+   se um teste anterior já tivesse ocupado bem o fim do dia, o "+15min"
+   testava um conflito de horário (23P01), não a fronteira do expediente.
+   Corrigido: os testes 5 e 6a agora usam diretamente o horário de
+   fechamento que você me passou (18:00/19:00 na semana, 23:59 no domingo)
+   como o próprio horário tentado — isso sempre estoura o expediente, não
+   importa o que mais já foi agendado, e nunca colide com nada porque o
+   instante exato do fechamento nunca é um horário "reservável".
 
 ---
 
@@ -51,80 +64,81 @@ node scripts/testar-funcoes-publicas.mjs
 
 | # | Teste | Esperado | Obtido | Resultado |
 |---|-------|----------|--------|-----------|
-| 1a | Nome com 1 letra | Erro "Nome precisa ter entre 2 e 100 caracteres" | Erro: "Nome precisa ter entre 2 e 100 caracteres" | ✅ Passou |
-| 1b | Nome só com espaços | Mesmo erro (trim deixa vazio) | Erro: "Nome precisa ter entre 2 e 100 caracteres" | ✅ Passou |
-| 1c | Nome com 101 caracteres | Mesmo erro | Erro: "Nome precisa ter entre 2 e 100 caracteres" | ✅ Passou |
-| 1d | Nome válido com espaços nas pontas (deve salvar sem eles) | Agendamento criado | — | ⏭️ Pulado (sem horário livre) |
-| 2a | Telefone com 9 dígitos | Erro "Telefone precisa ter 10 ou 11 números" | Erro: "Telefone precisa ter 10 ou 11 números (DDD + número)" | ✅ Passou |
-| 2b | Telefone com 12 dígitos aleatórios | Mesmo erro | Erro: "Telefone precisa ter 10 ou 11 números (DDD + número)" | ✅ Passou |
-| 2c | Telefone formatado `(21) 90000-0002` (deve aceitar e salvar só dígitos) | Agendamento criado | — | ⏭️ Pulado (sem horário livre) |
-| extra | Telefone `+55 21 90000-0008` **antes** da migration 004 | Comportamento atual: recusado (bug) | Erro: "Telefone precisa ter 10 ou 11 números..." — confirma o bug relatado | ✅ Passou (comprova o bug) |
-| 3 | Anti-spam: 3 agendamentos futuros OK, 4º bloqueado | 3 aceitos, 4º recusado | — | ⏭️ Pulado (sem horário livre) |
-| 4 | Conflito de horário: 2 agendamentos no mesmo horário/barbeiro | 2º recusado com código `23P01` | — | ⏭️ Pulado (sem horário livre) |
-| 5 | Fronteira do expediente (checagem que a migration 003 corrigiu) | Horário que não cabe é recusado | — | ⏭️ Pulado (sem horário livre) |
-| 6 | `listar_horarios_livres` reflete agendamento feito | Horário some da lista | — | ⏭️ Pulado (sem horário livre) |
-| 7a | Máscara de telefone em 375px, localhost | `(11) 99999-9999` enquanto digita | Confirmado: `21990163583` → `(21) 99016-3583` em tempo real | ✅ Passou |
-| 7b | Máscara de telefone em 375px, produção (Vercel) | Mesmo comportamento | Confirmado: `11988887777` → `(11) 98888-7777` em tempo real | ✅ Passou |
-| 7c | Página pública mostra "Nenhum horário livre nesse dia" quando não há expediente | Mensagem amigável, sem quebrar a tela | Confirmado em localhost e produção | ✅ Passou |
-| 7d | Mensagens de erro do agendamento (nome/telefone inválido) na tela, amigáveis | Mensagem em português, sem termo técnico | — | ⏭️ Não testável pela UI agora: o botão "Confirmar agendamento" fica desabilitado sem nenhum horário selecionável. **Já testado e confirmado, porém, direto na função do banco** (testes 1a–1c, 2a–2b acima) — a mesma mensagem que o banco devolve é repassada sem alteração por `app/b/[slug]/actions.ts` (`error.code === "P0001" → erro: error.message`). Revalidar pela UI depois de cadastrar os horários. |
+| 1a | Nome com 1 letra | Erro de nome | "Nome precisa ter entre 2 e 100 caracteres" | ✅ Passou |
+| 1b | Nome só com espaços | Erro de nome | "Nome precisa ter entre 2 e 100 caracteres" | ✅ Passou |
+| 1c | Nome com 101 caracteres | Erro de nome | "Nome precisa ter entre 2 e 100 caracteres" | ✅ Passou |
+| 1d | Nome com espaços nas pontas (deve salvar sem eles) | Criado com sucesso | Sucesso às 09:00 — nome cru tinha 101 caracteres, só passa se o banco der trim ANTES de validar o tamanho | ✅ Passou |
+| 2a | Telefone com 9 dígitos | Erro de telefone | "Telefone precisa ter 10 ou 11 números (DDD + número)" | ✅ Passou |
+| 2b | Telefone com 12 dígitos aleatórios | Erro de telefone | "Telefone precisa ter 10 ou 11 números (DDD + número)" | ✅ Passou |
+| 2c | Telefone formatado `(21) 90000-0001` (deve salvar só dígitos) | Criado com sucesso | Sucesso — se tivesse salvo formatado, a constraint `clientes_telefone_formato` teria barrado o insert | ✅ Passou |
+| 2d | Telefone `+55 21 90000-0002` (migration 004) | Criado com sucesso, salvo como `21900000002` | Sucesso | ✅ Passou |
+| 3.1–3.3 | 3 agendamentos futuros com o mesmo telefone | Todos criados | Sucesso nos 3 (10:30→09:00 em horários distintos, sem conflito) | ✅ Passou |
+| 3.4 | 4º agendamento futuro, mesmo telefone | Recusado, menciona limite de 3 | "Você já tem 3 agendamentos futuros marcados aqui. Cancele algum antes de marcar outro." | ✅ Passou |
+| 4a | 1º agendamento num horário livre | Criado com sucesso | Sucesso | ✅ Passou |
+| 4b | 2º agendamento no MESMO horário/barbeiro | Recusado, código `23P01` | "conflicting key value violates exclusion constraint... (código: 23P01)" | ✅ Passou |
+| 5 | Fim do expediente, dia de semana (horário = fechamento) | Recusado, "fora do expediente" | "Horário fora do expediente do barbeiro" | ✅ Passou |
+| 6a | Domingo 23:59 + serviço de 50min (cruzaria a meia-noite, terminaria 00:49 do dia seguinte) | Recusado, "fora do expediente" | "Horário fora do expediente do barbeiro" | ✅ Passou |
+| 6b | Domingo, último horário que cabe antes de 23:59 (ex: 21:00 + 50min = 21:50) | Criado com sucesso | Sucesso | ✅ Passou |
+| 6c | Nenhum horário de `listar_horarios_livres` (domingo) ultrapassa 23:59 somando a duração | `false` (nenhum ultrapassa) | `false`, conferido em todos os horários devolvidos | ✅ Passou |
+| 7 | Horário ocupado some de `listar_horarios_livres` | Some da lista | Sumiu — lista voltou sem aquele horário | ✅ Passou |
+| 8 | Envio completo pela tela, localhost, 375px | Mensagem de sucesso amigável | "Agendamento confirmado! corte de maquina às 09:00, no dia 08/10/2026." | ✅ Passou |
+| 9 | Erro amigável pela tela (telefone com limite de anti-spam já atingido), localhost | Mensagem de erro amigável | "Você já tem 3 agendamentos futuros marcados aqui. Cancele algum antes de marcar outro." (caixa vermelha) | ✅ Passou |
+| 10 | Mesmos testes 8 e 9, em produção (`fluxo-barber.vercel.app`) | Mesmo comportamento | Confirmado idêntico — sucesso e erro amigáveis, iguais ao localhost | ✅ Passou |
+| 11 | Máscara de telefone em 375px (localhost e produção) | `(DD) 9XXXX-XXXX` enquanto digita | Confirmado nos dois ambientes | ✅ Passou |
 
-**Resumo:** 9 de 9 testes executáveis passaram. 7 testes ficaram pendentes
-por falta de horário de trabalho cadastrado (não são falhas — são bloqueios
-de dados de teste, como avisado nas instruções). **Nenhum bug foi
-encontrado** nas funções já migradas (migration 003). O único problema
-identificado (telefone com "+55") já era esperado — é o motivo de existir a
-migration 004, criada nesta sessão.
+**Resumo: 21 de 21 testes passaram.** Nenhum bug encontrado nas funções
+do banco (migrations 003 e 004). Os 2 bugs encontrados foram no meu
+próprio script de teste (corrigidos, explicados acima, sem precisar de
+nenhuma mudança no banco ou no site).
 
 ---
 
 ## Testes do utilitário de telefone (`utils/telefone.ts`)
 
-Criei `utils/telefone.test.ts` com 9 testes simples, usando o test runner
-que já vem com o Node (não precisei instalar nenhuma biblioteca nova).
-Rode com:
-```
-npm test
-```
-Resultado: **9 de 9 passaram**, incluindo os casos de `+55`:
-- `"+55 21 99016-3583"` → `"21990163583"` (o `+` já era removido antes)
-- `"55 21 99016-3583"` → `"21990163583"` (o `"55"` sozinho, sem o `+` — **esse
-  era o caso quebrado**, corrigido agora em `utils/telefone.ts` e na
-  migration 004)
-- `"552133334444"` (fixo com 55 na frente) → `"2133334444"`
-- Um telefone de 11 dígitos não é mexido só por parecer ter um prefixo
+Reconferidos nesta rodada com `npm test`: **9 de 9 passaram**, incluindo
+os 4 casos de `+55` (ver rodada anterior para a lista completa).
 
 ---
 
-## Migration 004 — correção do "+55" (AINDA NÃO APLICADA)
+## Migrations 003 e 004 — confirmadas
 
-**Arquivo:** `supabase/migrations/004_telefone_55.sql` — **não rodei**,
-conforme pedido. Veja o passo a passo no `PENDENCIAS.md`.
-
-**O bug:** a normalização da migration 003 só tirava caracteres que não são
-dígito (`regexp_replace(..., '\D', '', 'g')`). Isso remove o `+` de
-`"+55 21 99016-3583"`, mas o `"55"` continua colado: o resultado vira
-`"5521990163583"`, com **13 dígitos** — e a constraint só aceita 10 ou 11,
-então um telefone brasileiro perfeitamente válido, só por ter sido digitado
-com o código do país, era **recusado por engano**. O teste "extra" na
-tabela acima comprova esse comportamento no banco, do jeito que está hoje.
-
-**A correção:** depois de tirar os não-dígitos, se sobrou algo com 12 ou 13
-dígitos começando com `"55"`, tira esse prefixo também — exatamente a
-mesma regra que já apliquei no `normalizarTelefone` do site. Também
-corrigi o comentário da migration 003, que dizia (incorretamente) que o
-`"+55"` inteiro já era removido ali.
+- **003**: telefone normalizado (só dígitos), nome/telefone validados,
+  virada da meia-noite corrigida, anti-spam — todos reconfirmados acima.
+- **004**: telefone com `+55` agora é aceito (teste 2d) — reconfirmado
+  também pelo teste do utilitário do site (`npm test`). Os comentários do
+  arquivo `004_telefone_55.sql` foram revisados nesta rodada (sem mudar a
+  lógica, só a documentação) — ver `PENDENCIAS.md`.
 
 ---
 
 ## SQL para apagar os dados de teste
 
-**Nesta rodada, nenhum dado de teste chegou a ser salvo** (todas as
-tentativas que dependiam de sucesso foram bloqueadas pela falta de
-horário de trabalho — ver seção acima), então não há nada pra limpar
-agora. Mesmo assim, aqui está o SQL pronto pra quando você rodar os testes
-completos (depois de cadastrar os horários) — rode no **SQL Editor** do
-Supabase, **nesta ordem** (agendamentos primeiro, por causa da chave
-estrangeira):
+Desta vez **existem dados de teste reais no banco** (vários agendamentos
+foram criados com sucesso pelos testes acima). Rode no **SQL Editor** do
+Supabase, **nesta ordem exata**.
+
+### 1) Primeiro, confira o que vai ser apagado (SELECT, não apaga nada)
+
+```sql
+-- mostra cada cliente de teste e quantos agendamentos ele tem, pra você conferir antes de apagar
+select
+  c.id as cliente_id,
+  c.nome,
+  c.telefone,
+  c.criado_em,
+  (select count(*) from agendamentos a where a.cliente_id = c.id) as total_agendamentos
+from clientes c
+join barbearias b on b.id = c.barbearia_id
+where b.slug = 'barbearia-teste'
+  and (c.telefone like '2190000000%' or c.nome like 'TESTE CLAUDE%')
+order by c.criado_em;
+```
+
+Confira: todo `nome` deve começar com "TESTE CLAUDE" e todo `telefone`
+deve estar na faixa `2190000000X`. Se aparecer qualquer coisa que não
+reconhece, **pare e me avise antes de apagar**.
+
+### 2) Depois, apague de verdade (nesta ordem — agendamentos primeiro)
 
 ```sql
 -- 1) apaga primeiro os AGENDAMENTOS de teste (a chave estrangeira
@@ -146,7 +160,13 @@ where b.id = c.barbearia_id
   and (c.telefone like '2190000000%' or c.nome like 'TESTE CLAUDE%');
 ```
 
-Depois de rodar, confira que sumiram (deve devolver 0 linhas):
+### 3) Confirme que sumiu (deve devolver 0 linhas)
+
 ```sql
 select count(*) from clientes where telefone like '2190000000%' or nome like 'TESTE CLAUDE%';
 ```
+
+**Lembrete:** depois de limpar os dados de teste, veja também o
+`PENDENCIAS.md` — tem um aviso pra remover o horário de teste do domingo
+(20:00–23:59) do "barbeiro1test", se você não for usar esse horário de
+verdade.
