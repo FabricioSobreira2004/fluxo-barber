@@ -10,6 +10,118 @@ Supabase que destravam o cadastro/login e a página pública.
 
 ---
 
+## Nova rodada — melhorias (outubro de 2026)
+
+**⚠️ Antes de testar: rode a migration 003** — veja
+[PENDENCIAS.md](PENDENCIAS.md), seção "Rodar a migration 003 (PRIORIDADE)".
+Sem ela, telefone/nome não são validados no banco (o site já valida, mas o
+banco é a defesa final) e o bug da virada da meia-noite continua.
+
+### 1. Migration 003 — padronização e correções no banco
+**Commit:** `acddbb8` · **Arquivo:** `supabase/migrations/003_padronizacao_e_correcoes.sql`
+- Telefone dos clientes passa a ser guardado **só com dígitos** (ex:
+  `21990163583`, nunca `(21) 99016-3583`). Os telefones já cadastrados são
+  normalizados automaticamente; se isso criar duplicata na mesma barbearia,
+  a migration **para com uma mensagem explicando como resolver manualmente**
+  (não mescla/apaga nada sozinha, por segurança).
+- Constraint nova (`clientes_telefone_formato`) trava telefone fora do
+  padrão (10 ou 11 dígitos) direto no banco.
+- `criar_agendamento_publico` agora valida nome (2–100 caracteres) e
+  telefone (10/11 dígitos), com mensagens em português.
+- **Corrigido o bug da virada da meia-noite**: um atendimento perto da
+  meia-noite (ex: 23:30 + 60min) não "passava" mais pela checagem de
+  expediente por engano — a comparação agora usa data+hora completas, não
+  só a hora.
+- **Anti-spam**: um telefone não consegue ter mais de 3 agendamentos
+  futuros (não cancelados) na mesma barbearia.
+- **Como testar:** depois de rodar a migration no SQL Editor, tente agendar
+  pela página pública (`/b/<slug>`) com um nome de 1 letra ou um telefone
+  incompleto — deve recusar com mensagem clara. Tente agendar mais de 3
+  vezes seguidas com o mesmo telefone — a 4ª deve ser recusada.
+
+### 2. Telefone padronizado no site inteiro
+**Commit:** `3ec45c8` · **Arquivos:** `utils/telefone.ts`, `utils/validacao.ts`
+- `utils/telefone.ts` ganhou `normalizarTelefone` (só dígitos, mesma regra
+  do banco), `telefoneTemFormatoValido`, e `aplicarMascaraTelefone` (formata
+  **enquanto você digita**: `(21) 99016-3583`).
+- Máscara aplicada no campo de telefone da Agenda (novo agendamento) e da
+  página pública de agendamento. O card de agendamento já formatava o
+  telefone pra exibição (sem mudança necessária aí).
+- Validação no formulário, com as mesmas mensagens do banco, **antes** de
+  enviar (nome 2–100 caracteres, telefone 10/11 dígitos).
+- **Como testar:** em `/painel/agenda`, digite um telefone no campo "Telefone
+  do cliente" — repare a máscara se formando enquanto digita. Tente enviar
+  com um telefone incompleto.
+
+### 3. Tipos gerados do banco
+**Commit:** `bfa2f31` · **Arquivo:** `utils/supabase/database.types.ts`
+- Não consegui rodar `supabase gen types` de verdade (precisa de
+  `supabase login`, que abre o navegador — ver PENDENCIAS.md com o passo a
+  passo pra você rodar). Escrevi o arquivo **no mesmo formato** que a CLI
+  geraria, a partir do schema das migrations 001–003.
+- Os dois clientes do Supabase (`utils/supabase/server.ts` e `client.ts`)
+  agora usam esse tipo: `.from("tabela").select(...)` e `.rpc(...)` vêm com
+  autocomplete e checagem de tipo no editor.
+- Removi interfaces escritas à mão que duplicavam o formato das tabelas
+  (`app/painel/agenda/tipos.ts`, `FormularioNovoAgendamento`,
+  `FormularioAgendamentoPublico`, `FormularioConfiguracoes`,
+  `utils/status-agendamento.ts`) — agora todas derivam do tipo gerado.
+- Bônus: o `as unknown as` que existia em `app/painel/agenda/page.tsx` (pra
+  "forçar" o TypeScript a aceitar o formato da consulta com relacionamentos)
+  não é mais necessário — o tipo gerado já ensina o Supabase a inferir isso
+  sozinho, pela chave estrangeira.
+
+### 4. Termos de Uso, Política de Privacidade e LGPD
+**Commit:** `713bc7b`
+- `/termos` e `/privacidade`, com data de "última atualização" no topo.
+  **São um modelo inicial — precisam de revisão de um advogado antes do
+  lançamento comercial** (está anotado na própria página e no
+  PENDENCIAS.md).
+- Rodapé reutilizável (`components/Footer.tsx`): copyright com ano
+  automático, links pras 2 páginas legais, e a assinatura "Desenvolvido por
+  Fabrício Sobreira" (dourado, linka pro GitHub). Usado na landing, em
+  login/cadastro (via `AuthCard`), termos, privacidade e na página pública
+  `/b/[slug]`.
+- Cadastro agora tem uma caixa obrigatória "Li e aceito os Termos de Uso e a
+  Política de Privacidade" (valida no navegador **e** no servidor).
+- Página pública de agendamento tem o texto "Ao agendar, você concorda com
+  a Política de Privacidade" abaixo do botão.
+- Procure por `[EMAIL DE CONTATO]` nas duas páginas legais e troque pelo
+  email de contato real (anotado no PENDENCIAS.md).
+
+### 5. Essenciais de um SaaS
+**Commits:** `a40af08`, `9c3abb6`, `5f335b5`, `da5cbb3`
+- **Esqueci minha senha**: link no login → `/esqueci-senha` (pede o email,
+  sempre com a mesma mensagem de sucesso, mesmo se o email não existir —
+  evita vazar quais emails têm conta) → `/redefinir-senha` (define a nova
+  senha). Reaproveita a rota `/auth/confirm` que já existia.
+- **Página 404** (`app/not-found.tsx`) e **página de erro**
+  (`app/error.tsx`), preto e dourado, com botão de voltar ao início.
+- **Loading states**: um `loading.tsx` com skeletons "piscando" em cada
+  página do painel (Agenda, Barbeiros, Serviços, Horários, Configurações).
+- **SEO**: title e description em toda página (incluindo o `/b/[slug]`
+  dinâmico, com o nome da barbearia). Páginas do painel (área logada) têm
+  `robots: noindex`, pra não aparecer em buscadores.
+- **Imagem de compartilhamento (Open Graph)**: `app/opengraph-image.tsx`
+  *gera* a imagem (preto/dourado, "Fluxo Barber") na hora, sem precisar de
+  nenhum arquivo de design — aparece quando o link é compartilhado no
+  WhatsApp.
+- **Acessibilidade**: todo campo já tinha `<label>`; adicionei um contorno
+  dourado visível em **qualquer** elemento focado pelo teclado
+  (`:focus-visible` em `app/globals.css`), consistente em todo o site.
+- **Revisão em 375px**: encontrei e corrigi uma quebra real — nos cards de
+  Barbeiros e Serviços, um nome comprido (ex: "tesoura + barba +
+  sombrancelha") empurrava os botões "Desativar"/"Apagar" pra fora do card.
+  Os cards agora empilham verticalmente no celular e voltam a ficar lado a
+  lado a partir de telas maiores (640px). Também ajustei o cabeçalho da
+  landing page, que ficava apertado em 375px.
+
+### 6. Rodapé
+Ver item 4 acima — o rodapé já cobre todas as páginas pedidas (landing,
+login, cadastro, termos, privacidade, página pública).
+
+---
+
 ## O que foi feito, etapa por etapa
 
 ### Etapa 5 — Schema versionado
