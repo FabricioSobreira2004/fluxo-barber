@@ -47,6 +47,20 @@ erro "over_email_send_rate_limit" só de testar o cadastro 2 vezes seguidas).
      clientes de verdade**, senão qualquer pessoa cadastra uma conta com
      email de outra pessoa sem precisar confirmar nada.
 
+## Nova rodada — Termos de Uso e Política de Privacidade
+
+**O que é:** criei `/termos` e `/privacidade`, com link no cadastro
+(checkbox obrigatória) e na página pública de agendamento.
+
+**O que você precisa fazer:**
+1. Procure por `[EMAIL DE CONTATO]` nos dois arquivos
+   (`app/termos/page.tsx` e `app/privacidade/page.tsx`) e troque pelo email
+   de contato real da barbearia/empresa.
+2. **Importante:** os textos são um modelo inicial, escrito em linguagem
+   simples — **precisam ser revisados por um advogado antes do lançamento
+   comercial**, especialmente a parte de LGPD (papéis de controlador e
+   operador) e qualquer cláusula de responsabilidade.
+
 ## Nova rodada — Gerar os tipos do banco pela CLI do Supabase (opcional)
 
 **O que é:** o site agora usa tipos TypeScript do banco (`utils/supabase/database.types.ts`)

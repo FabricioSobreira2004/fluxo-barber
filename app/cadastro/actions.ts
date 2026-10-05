@@ -14,9 +14,13 @@ export async function cadastrar(_estadoAnterior: EstadoCadastro, formData: FormD
   const email = String(formData.get("email") ?? "").trim(); // email digitado, sem espaços nas pontas
   const senha = String(formData.get("senha") ?? ""); // senha digitada
   const confirmarSenha = String(formData.get("confirmarSenha") ?? ""); // repetição da senha, pra conferir digitação
+  const aceiteTermos = formData.get("aceiteTermos") === "on"; // navegador manda "on" quando a checkbox está marcada; nada, quando não está
 
   if (!email || !senha) { // validações simples antes de gastar uma chamada de rede
     return { erro: "Preencha email e senha." };
+  }
+  if (!aceiteTermos) { // o "required" do navegador já impede isso quase sempre; checamos de novo aqui por segurança (chamada direta à action, sem passar pelo HTML)
+    return { erro: "Você precisa aceitar os Termos de Uso e a Política de Privacidade." };
   }
   if (senha.length < 6) { // o Supabase já exige isso, mas validar antes evita uma chamada de rede desnecessária
     return { erro: "A senha precisa ter pelo menos 6 caracteres." };

@@ -2,6 +2,7 @@ import Link from "next/link"; // link pra voltar pra home clicando no logo
 import { type ReactNode } from "react"; // tipo genérico de "qualquer coisa que o React sabe renderizar"
 import { Logo } from "@/components/ui/Logo"; // marca "Fluxo Barber"
 import { Card } from "@/components/ui/Card"; // bloco de superfície que já tem o visual padrão
+import { Footer } from "@/components/Footer"; // rodapé com copyright, links legais e assinatura
 
 interface PropriedadesAuthCard { // o que o AuthCard recebe
   titulo: string; // título da tela (ex: "Entrar", "Criar conta")
@@ -18,6 +19,7 @@ export function AuthCard({ titulo, children }: PropriedadesAuthCard) { // layout
         <h1 className="mb-6 font-display text-2xl font-semibold text-texto">{titulo}</h1>
         {children}
       </Card>
+      <Footer />
     </main>
   );
 }

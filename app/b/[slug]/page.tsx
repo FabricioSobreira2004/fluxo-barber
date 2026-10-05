@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"; // mostra a página 404 padrão do N
 import { createClient } from "@/utils/supabase/server"; // cliente Supabase do lado servidor
 import { Logo } from "@/components/ui/Logo"; // marca "Fluxo Barber" no topo
 import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
+import { Footer } from "@/components/Footer"; // rodapé com copyright, links legais e assinatura
 import { FormularioAgendamentoPublico } from "./FormularioAgendamentoPublico"; // formulário (Client Component) de agendamento
 
 export default async function PaginaBarbeariaPublica(props: PageProps<"/b/[slug]">) { // página pública, sem exigir login
@@ -40,6 +41,8 @@ export default async function PaginaBarbeariaPublica(props: PageProps<"/b/[slug]
           )}
         </Card>
       </div>
+
+      <Footer /> {/* "mt-auto" não é necessário aqui: o <main> não usa justify-center, então o rodapé já fica depois do conteúdo */}
     </main>
   );
 }

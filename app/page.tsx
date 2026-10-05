@@ -2,6 +2,7 @@ import Link from "next/link"; // navegação entre páginas do Next.js sem recar
 import { CalendarCheck, Clock, Users, Scissors } from "lucide-react"; // ícones usados nos cards de benefício
 import { Logo } from "@/components/ui/Logo"; // marca "Fluxo Barber" no topo
 import { classesBotao } from "@/components/ui/Button"; // reaproveita o estilo de botão em links (Criar conta/Entrar)
+import { Footer } from "@/components/Footer"; // rodapé com copyright, links legais e assinatura
 
 const beneficios = [ // lista de benefícios mostrados na landing page, cada um com ícone, título e descrição
   {
@@ -65,9 +66,7 @@ export default function Home() { // landing page pública: primeira tela que um 
         ))}
       </section>
 
-      <footer className="border-t border-borda px-6 py-6 text-center text-sm text-texto-secundario">
-        © {new Date().getFullYear()} Fluxo Barber {/* ano atual calculado automaticamente, nunca fica desatualizado */}
-      </footer>
+      <Footer />
     </main>
   );
 }

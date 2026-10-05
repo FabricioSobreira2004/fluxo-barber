@@ -41,6 +41,28 @@ export function FormularioCadastro() {
         <Input id="confirmarSenha" name="confirmarSenha" type="password" autoComplete="new-password" required minLength={6} />
       </div>
 
+      <div className="flex items-start gap-2"> {/* checkbox exigida pela LGPD: a pessoa precisa concordar ANTES de criar a conta */}
+        <input
+          id="aceiteTermos"
+          name="aceiteTermos"
+          type="checkbox"
+          required
+          // mesma cor dourada dos outros controles, e foco visível (acessibilidade) igual ao resto do formulário
+          className="mt-1 h-4 w-4 shrink-0 rounded border-borda bg-superficie text-dourado accent-dourado focus:outline-2 focus:outline-offset-2 focus:outline-dourado"
+        />
+        <Label htmlFor="aceiteTermos" className="mb-0 text-xs leading-snug">
+          Li e aceito os{" "}
+          <Link href="/termos" target="_blank" className="text-dourado hover:text-dourado-claro">
+            Termos de Uso
+          </Link>{" "}
+          e a{" "}
+          <Link href="/privacidade" target="_blank" className="text-dourado hover:text-dourado-claro">
+            Política de Privacidade
+          </Link>
+          .
+        </Label>
+      </div>
+
       <FormMessage tipo="erro">{estado.erro}</FormMessage> {/* só aparece quando "estado.erro" tem algum texto */}
 
       <Button type="submit" disabled={pendente} className="w-full"> {/* desabilita o botão enquanto a Server Action está rodando */}

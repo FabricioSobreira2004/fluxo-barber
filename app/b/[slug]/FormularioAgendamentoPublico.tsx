@@ -1,6 +1,7 @@
 "use client"; // precisa de estado e efeitos (useState/useEffect), por isso vira Client Component
 
 import { useEffect, useState, useTransition, type FormEvent } from "react"; // hooks de estado/efeito do React
+import Link from "next/link"; // link pra página de política de privacidade, abaixo do botão
 import { Label } from "@/components/ui/Label"; // legenda dos campos
 import { Input } from "@/components/ui/Input"; // campo de texto estilizado
 import { Select } from "@/components/ui/Select"; // menu de opções estilizado
@@ -172,6 +173,15 @@ export function FormularioAgendamentoPublico({ barbeariaId, barbeiros, servicos 
       <Button type="submit" disabled={enviando || !horario} className="w-full">
         {enviando ? "Agendando..." : "Confirmar agendamento"}
       </Button>
+
+      <p className="text-center text-xs text-texto-secundario">
+        {/* exigência da LGPD: a pessoa precisa saber, antes de enviar seus dados, onde consultar como eles são usados */}
+        Ao agendar, você concorda com a{" "}
+        <Link href="/privacidade" target="_blank" className="text-dourado hover:text-dourado-claro">
+          Política de Privacidade
+        </Link>
+        .
+      </p>
     </form>
   );
 }
