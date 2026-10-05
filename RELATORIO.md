@@ -55,6 +55,40 @@ Esta rodada teve 3 partes independentes, cada uma com seu próprio commit.
   domínio `fluxobarber.com.br` → SMTP próprio → liberação pra editar
   templates → religar a confirmação de email.
 
+### Parte 2 — textos de vendas na landing page (copywriting)
+
+**Arquivos novos:** `components/ui/Destaque.tsx`, `components/landing/ComoFunciona.tsx`,
+`components/landing/ChamadaFinal.tsx`
+**Arquivos alterados:** `components/landing/Hero.tsx`, `components/landing/Beneficios.tsx`, `app/page.tsx`
+
+- Os textos eram só descrição de função ("Agenda online", "Gestão de
+  equipe"). Reescrevi em cima da dor do **dono** da barbearia (WhatsApp
+  tocando o dia todo, agenda bagunçada, encaixe em cima de encaixe) — segui
+  à risca as sugestões de texto que você deu, só ajustando pontuação.
+  **Nenhuma promessa nova:** revisei cada frase pra garantir que só descreve
+  o que o sistema já faz hoje (agendamento pelo link público, sem conflito
+  de horário, barbeiros/serviços/preços/horários, agenda no painel) — nada
+  de "lembrete por WhatsApp", pagamento online ou relatório financeiro.
+- **`Destaque`** (`components/ui/Destaque.tsx`): componente novo e
+  reutilizável, só um `<strong>` dourado semi-negrito. Usado no subtítulo do
+  hero e na descrição dos 4 cards, pra não repetir a mesma classe Tailwind
+  em 7 lugares diferentes.
+- **Cores mais claras:** subtítulo do hero passou de `text-texto-secundario`
+  (cinza) pra `text-texto/90` (quase branco, com 90% de opacidade) e ficou
+  um pouco maior (`md:text-xl`); descrição dos cards passou de
+  `text-texto-secundario` pra `text-texto/80`. Os títulos (`h3` dos cards,
+  `h1` do hero) continuam 100% brancos, pra manter a hierarquia.
+- **Seção "Como funciona"** (`ComoFunciona.tsx`): 3 passos numerados (bolinha
+  dourada com o número), ligados por uma linha dourada fina — só no desktop;
+  no celular os passos já ficam empilhados, claros o suficiente sem linha.
+- **Chamada final** (`ChamadaFinal.tsx`): título + frase curta + botão
+  "Criar conta gratuita" em destaque, logo antes do rodapé — pra quem rolou
+  a página inteira e ainda não decidiu.
+- Conferi visualmente (desktop, via a ferramenta de navegador) que os textos,
+  destaques dourados e as duas seções novas renderizam certo; só não dá pra
+  ver a animação de entrada rodando ao vivo, pelo mesmo motivo já explicado
+  na rodada anterior (aba em `visibilityState: "hidden"` nessa ferramenta).
+
 ---
 
 ## Nova rodada — animações GSAP na landing page (outubro de 2026)

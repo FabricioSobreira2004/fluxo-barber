@@ -4,6 +4,8 @@ import { classesBotao } from "@/components/ui/Button"; // reaproveita o estilo d
 import { Footer } from "@/components/Footer"; // rodapé com copyright, links legais e assinatura
 import { Hero } from "@/components/landing/Hero"; // título, subtítulo e botões de CTA, com animação de entrada
 import { Beneficios } from "@/components/landing/Beneficios"; // grade de 4 cards, com animação ao rolar a tela
+import { ComoFunciona } from "@/components/landing/ComoFunciona"; // seção "Como funciona", em 3 passos
+import { ChamadaFinal } from "@/components/landing/ChamadaFinal"; // chamada final pra criar conta, antes do rodapé
 
 export default function Home() { // landing page pública: primeira tela que um visitante vê
   return (
@@ -18,6 +20,8 @@ export default function Home() { // landing page pública: primeira tela que um 
 
       <Hero /> {/* bloco de destaque (hero): anima a entrada do título, subtítulo e botões */}
       <Beneficios /> {/* grade de benefícios: anima cada card conforme entra na tela ao rolar */}
+      <ComoFunciona /> {/* explica o fluxo em 3 passos, pra quem nunca usou */}
+      <ChamadaFinal /> {/* último empurrão pra criar conta, antes do rodapé */}
 
       <Footer />
     </main>

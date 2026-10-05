@@ -5,29 +5,50 @@ import { CalendarCheck, Clock, Users, Scissors } from "lucide-react"; // ícones
 import { useGSAP } from "@gsap/react"; // hook oficial do GSAP pra React: já limpa a animação sozinho ao desmontar
 import gsap from "gsap"; // motor de animação
 import { ScrollTrigger } from "gsap/ScrollTrigger"; // plugin que dispara a animação quando o elemento entra na tela
+import { Destaque } from "@/components/ui/Destaque"; // trecho de texto em dourado, usado nas palavras-chave de cada card
 
 gsap.registerPlugin(useGSAP, ScrollTrigger); // registra os plugins antes de usá-los
 
-const beneficios = [ // lista de benefícios mostrados na landing page, cada um com ícone, título e descrição
+const beneficios = [ // lista de benefícios mostrados na landing page: foco na dor do dono de barbearia, não só na função
   {
     Icone: CalendarCheck,
-    titulo: "Agenda online",
-    descricao: "Seus clientes marcam horário sozinhos, a qualquer hora, sem precisar ligar pra barbearia.",
+    titulo: "Agenda online 24h",
+    descricao: (
+      <>
+        Seu cliente marca o horário <Destaque>pelo celular, a qualquer hora</Destaque>, sem
+        precisar te chamar no WhatsApp.
+      </>
+    ),
   },
   {
     Icone: Clock,
-    titulo: "Sem conflito de horário",
-    descricao: "O sistema trava automaticamente dois agendamentos no mesmo horário com o mesmo barbeiro.",
+    titulo: "Zero horário duplicado",
+    descricao: (
+      <>
+        O sistema <Destaque>bloqueia automaticamente</Destaque> dois clientes no mesmo horário com
+        o mesmo barbeiro. Acabou o encaixe em cima de encaixe.
+      </>
+    ),
   },
   {
     Icone: Users,
-    titulo: "Gestão de equipe",
-    descricao: "Cadastre seus barbeiros, defina os horários de trabalho de cada um e acompanhe a agenda.",
+    titulo: "Equipe organizada",
+    descricao: (
+      <>
+        Cada barbeiro com seus horários e sua agenda, <Destaque>tudo num só lugar</Destaque>, no
+        computador ou no celular.
+      </>
+    ),
   },
   {
     Icone: Scissors,
     titulo: "Serviços e preços",
-    descricao: "Organize os serviços oferecidos, com duração e preço, e deixe a agenda calcular o resto.",
+    descricao: (
+      <>
+        Cadastre cortes, barbas e combos com <Destaque>preço e duração</Destaque>, e a agenda
+        calcula o resto.
+      </>
+    ),
   },
 ];
 
@@ -71,7 +92,7 @@ export function Beneficios() { // grade de 4 cards que aparecem um a um conforme
             aria-hidden // ícone decorativo; o título do card já explica o conteúdo
           />
           <h3 className="mb-2 font-display text-lg font-semibold text-texto">{titulo}</h3>
-          <p className="text-sm text-texto-secundario">{descricao}</p>
+          <p className="text-sm text-texto/80">{descricao}</p> {/* "text-texto/80": mais claro que o cinza de antes, mantendo o título em destaque */}
         </div>
       ))}
     </section>
