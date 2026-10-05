@@ -5,9 +5,12 @@
 --
 -- O que este arquivo faz, em ordem:
 --   a) Padroniza o telefone dos clientes para guardar SÓ dígitos (sem
---      "(21) ", sem "-", sem "+55"), normalizando os dados que já existem e
+--      "(21) ", sem "-"), normalizando os dados que já existem e
 --      adicionando uma trava (constraint) que impede telefone fora do
---      padrão de entrar no banco a partir de agora.
+--      padrão de entrar no banco a partir de agora. IMPORTANTE: só tira
+--      caracteres que não são dígito -- o "55" do código do Brasil (quando
+--      alguém digita "+55 21 99016-3583") NÃO é removido aqui; isso só foi
+--      corrigido depois, na migration 004_telefone_55.sql.
 --   b) Valida nome e telefone recebidos nas funções públicas (chamadas por
 --      qualquer visitante da internet, sem login), com mensagens em
 --      português.
@@ -29,7 +32,7 @@
 -- ----------------------------------------------------------------------------
 
 -- passo 1: normaliza os telefones já cadastrados, removendo tudo que não é
--- número (espaços, parênteses, hífen, "+55"...). Fazemos isso numa tabela
+-- número (espaços, parênteses, hífen, o "+" de "+55"...). Fazemos isso numa tabela
 -- temporária primeiro, pra poder DETECTAR duplicatas antes de tocar nos dados
 -- de verdade -- ex: "(21) 99016-3583" e "21 99016 3583" são o MESMO telefone
 -- depois de normalizados, e dois clientes assim virariam duplicata na mesma

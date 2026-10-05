@@ -1,5 +1,13 @@
-export function normalizarTelefone(bruto: string): string { // remove tudo que não é número (espaços, parênteses, hífen, "+55"...)
-  return bruto.replace(/\D/g, ""); // mesma regra usada no banco (migration 003), pra nunca salvar dois formatos diferentes do mesmo telefone
+export function normalizarTelefone(bruto: string): string { // remove tudo que não é número (espaços, parênteses, hífen, o "+" de "+55"...)
+  const apenasDigitos = bruto.replace(/\D/g, ""); // "+55 21 99016-3583" -> "5521990163583" (o "55" continua colado, por enquanto)
+
+  // se sobrou o código do Brasil colado no número (ex: alguém digitou "+55" ou só "55" na frente),
+  // tira esse prefixo pra chegar nos 10/11 dígitos de verdade -- mesma regra da migration 004_telefone_55.sql
+  if (apenasDigitos.length >= 12 && apenasDigitos.length <= 13 && apenasDigitos.startsWith("55")) {
+    return apenasDigitos.slice(2);
+  }
+
+  return apenasDigitos; // mesma regra usada no banco (migrations 003 e 004), pra nunca salvar dois formatos diferentes do mesmo telefone
 }
 
 export function telefoneTemFormatoValido(bruto: string): boolean { // mesma regra da constraint "clientes_telefone_formato" do banco

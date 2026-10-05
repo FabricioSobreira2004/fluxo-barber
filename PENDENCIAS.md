@@ -5,31 +5,49 @@ necessário, e o passo a passo para você resolver.
 
 ---
 
-## ⚠️ PRIORIDADE — Rodar a migration 003
+## ✅ Migration 003 — já aplicada
 
-**O que é:** `supabase/migrations/003_padronizacao_e_correcoes.sql` padroniza
-o telefone dos clientes (só dígitos), valida nome/telefone nas funções
-públicas, corrige um bug de virada da meia-noite em
-`criar_agendamento_publico`, e trava spam (máx. 3 agendamentos futuros por
-telefone na mesma barbearia).
+Você confirmou que já rodou `supabase/migrations/003_padronizacao_e_correcoes.sql`
+no SQL Editor. Testei as funções públicas depois disso — veja o resultado
+completo em `TESTES.md`. Resumo: toda validação de nome/telefone funcionou
+certinho.
 
-**Por que precisa rodar manualmente:** altera dados existentes (normaliza
-telefones já cadastrados) e cria uma constraint — não posso executar isso
-no seu banco, só você.
+## ⚠️ PRIORIDADE — Rodar a migration 004 (corrige o "+55")
+
+**O que é:** `supabase/migrations/004_telefone_55.sql` corrige um bug que
+encontrei testando: um telefone digitado com o código do país
+(`"+55 21 99016-3583"` ou até só `"55 21 99016-3583"`, sem o `+`) era
+**recusado por engano**, porque o `"55"` ficava colado no número depois da
+normalização (virava 13 dígitos em vez de 11). Comprovei esse comportamento
+no teste "extra" do `TESTES.md`.
 
 **O que fazer:**
 1. Abra o **SQL Editor** no painel do Supabase.
-2. Copie todo o conteúdo de `supabase/migrations/003_padronizacao_e_correcoes.sql`
-   e execute.
-3. **Atenção:** se você já tem clientes cadastrados com o mesmo telefone
-   escrito de formas diferentes (ex: "(21) 99016-3583" e "21990163583" na
-   mesma barbearia), o script vai PARAR com uma mensagem de erro explicando
-   como encontrar e resolver essas duplicatas antes de rodar de novo — isso
-   é intencional, pra não arriscar misturar o histórico de dois clientes
-   diferentes automaticamente.
-4. Sem rodar essa migration, o site continua funcionando como antes (as
-   funções antigas continuam no banco), mas sem as correções e validações
-   novas.
+2. Copie todo o conteúdo de `supabase/migrations/004_telefone_55.sql` e
+   execute (usa `create or replace`, mesma assinatura — não precisa mudar
+   nada no site).
+3. Essa migration **depende da 003 já estar aplicada** (ela já está, então
+   pode rodar a 004 direto).
+4. O site já está pronto do lado dele: `utils/telefone.ts` já trata o
+   `"+55"` corretamente (com testes em `utils/telefone.test.ts`, rode
+   `npm test` pra conferir). Só falta essa parte no banco.
+
+## ⚠️ Pra completar os testes — cadastre horário de trabalho do "barbeiro1test"
+
+**O que é:** testando as funções públicas (`TESTES.md`), descobri que o
+barbeiro "barbeiro1test" da barbearia de teste **não tem nenhum horário de
+trabalho cadastrado** em `horarios_trabalho`. Por causa disso, 7 dos 13
+testes não puderam ser completados (tudo que depende de conseguir criar um
+agendamento de verdade: anti-spam, conflito de horário, fronteira do
+expediente, `listar_horarios_livres`, e os casos de nome/telefone *válidos*).
+
+**O que fazer:**
+1. Entre no painel (`/painel/horarios`) com a conta de teste.
+2. Selecione "barbeiro1test".
+3. Adicione pelo menos 1 intervalo de horário em pelo menos 1 dia da semana
+   (ex: segunda a sexta, 08:00 às 18:00).
+4. Me avise, ou rode você mesmo: `node scripts/testar-funcoes-publicas.mjs`
+   — o script já está pronto no projeto e usa só a Publishable key.
 
 ## Etapa 5 — Schema versionado
 
