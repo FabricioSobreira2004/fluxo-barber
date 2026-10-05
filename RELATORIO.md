@@ -4,9 +4,74 @@ Este arquivo resume tudo o que foi feito enquanto você estava fora, como
 testar cada parte, o que ainda falta configurar no Supabase, e sugestões de
 próximos passos.
 
-**Antes de testar qualquer coisa que exija login**, veja a seção
-[Pendências](#pendências-o-que-fazer-no-supabase) — tem 2 ações no painel do
-Supabase que destravam o cadastro/login e a página pública.
+**Veja sempre o [PENDENCIAS.md](PENDENCIAS.md)** para a lista atualizada do
+que falta fazer no painel do Supabase — esse arquivo é reorganizado a cada
+rodada em "Concluído", "Para fazer agora" e "Pré-lançamento".
+
+---
+
+## Nova rodada — tipos reais, email de contato e templates (outubro de 2026)
+
+### 1. Tipos do banco gerados de verdade pela CLI
+**Arquivos:** `utils/supabase/database.types.ts`, `package.json`
+- Você já tinha rodado `npx supabase login` neste computador, então desta vez
+  deu pra gerar os tipos de verdade: `npx supabase gen types typescript
+  --project-id bvspfjhcooygqfsgirnu`. Isso substitui o arquivo que antes era
+  escrito à mão (rodadas anteriores não tinham como logar na CLI).
+- A seção "Atalhos" no final do arquivo (`Tabelas`, `NovaLinha`,
+  `AtualizacaoLinha`, `TipoEnum`) foi copiada de volta manualmente, porque
+  ela não faz parte do que a CLI gera.
+- Build rodou sem nenhum erro de tipo. Duas diferenças reais apareceram entre
+  os tipos escritos à mão e o banco de verdade (documentadas em comentário
+  dentro do próprio arquivo, pra você não perder o contexto):
+  - A coluna `membros.papel` tem um **valor padrão direto no banco** que
+    nenhuma migration versionada (001 a 004) registra — alguém deve ter
+    adicionado isso manualmente pelo painel em algum momento. Não quebra
+    nada (o código sempre informa o papel explicitamente ao inserir), mas é
+    um "drift" entre as migrations versionadas e o banco real — se quiser,
+    posso criar uma migration 005 só pra documentar esse default, me avise.
+  - A função `buscar_barbearia_publica` aparece nos tipos gerados como
+    retornando `telefone`/`endereco` **nunca nulos**, mas a coluna
+    `barbearias.telefone`/`endereco` aceita `null`. É uma limitação conhecida
+    do gerador para funções SQL com `returns table` (ele não analisa a
+    consulta interna, só a assinatura da função). Conferi o uso no código
+    (`app/b/[slug]/page.tsx`) e o `endereco` já é tratado como opcional
+    (`{barbearia.endereco && ...}`), então não há bug na prática.
+- Novo script **`npm run gen:types`** no `package.json`, pra você rodar
+  sempre que mudar o banco (nova tabela, nova coluna, nova função).
+
+### 2. Email de contato real
+**Arquivos:** `app/termos/page.tsx`, `app/privacidade/page.tsx`, `components/Footer.tsx`
+- Troquei `[EMAIL DE CONTATO]` por `contato.fluxobarber@gmail.com` (como
+  link `mailto:`) nas duas páginas legais.
+- Adicionei o mesmo email no rodapé do site inteiro, discreto, junto dos
+  links de Termos/Privacidade.
+
+### 3. Templates de email em português
+**Pasta nova:** `supabase/templates/`
+- Criei os 4 templates que o painel do Supabase pede (Confirm signup, Reset
+  Password, Change Email Address, Magic Link), em português, no visual
+  preto e dourado do site — HTML baseado em tabelas, estilos inline, sem
+  fontes externas, com o link também disponível como texto puro (fallback
+  caso o botão não renderize em algum cliente de email).
+- **Ponto importante:** esses templates **não usam** o link padrão do
+  Supabase (`{{ .ConfirmationURL }}`), porque esse link aponta direto pro
+  servidor do Supabase, que confirmaria a conta sozinho, sem passar pela
+  nossa rota `app/auth/confirm/route.ts`. Como essa rota já existe e faz
+  questão de processar a confirmação ela mesma (chamando
+  `supabase.auth.verifyOtp()` no servidor), os templates constroem o link na
+  mão, com `token_hash` e `type` — expliquei isso em comentário no topo de
+  cada arquivo `.html`, e tem um passo a passo completo (com os assuntos
+  sugeridos) no `PENDENCIAS.md`.
+- **Esses templates só funcionam depois de você colar cada um no painel** —
+  ver `PENDENCIAS.md`, seção "Para fazer agora".
+
+### 4. PENDENCIAS.md reorganizado
+- Separado em três seções fixas: "✅ Concluído", "🔧 Para fazer agora" e
+  "🚀 Pré-lançamento" — pra ficar claro o que já está resolvido e o que
+  ainda falta, sem precisar reler o histórico inteiro.
+- Corrigida a informação de que a migration 002 (agendamento público) ainda
+  não tinha sido aplicada — ela já foi, há algumas rodadas.
 
 ---
 
@@ -259,18 +324,11 @@ E abra `http://localhost:3000`.
 
 ## Pendências (o que fazer no Supabase)
 
-Resumo rápido (detalhes completos em `PENDENCIAS.md`):
-
-1. **Confirmação de email** — por padrão, o Supabase exige clicar num link
-   de email antes de logar. Pra testar mais rápido agora, vá em
-   **Authentication → Providers → Email** e desmarque **"Confirm email"**
-   (lembre de religar antes de ter clientes de verdade). Alternativa: deixar
-   ligado e configurar **Authentication → URL Configuration** com
-   `http://localhost:3000` em Site URL e Redirect URLs.
-2. **Rodar `supabase/migrations/002_agendamento_publico.sql`** — copie o
-   conteúdo desse arquivo no SQL Editor do Supabase e execute. Sem isso, a
-   página `/b/[slug]` mostra "não encontrada" pra qualquer barbearia (já
-   confirmei que isso acontece de forma segura, sem erro feio na tela).
+As duas pendências que ficavam aqui (confirmação de email e rodar a
+migration 002) **já foram resolvidas** em rodadas anteriores — URL
+Configuration está feita e a migration 002 já rodou. A lista atualizada do
+que falta (hoje, só colar os templates de email no painel) está sempre em
+[PENDENCIAS.md](PENDENCIAS.md).
 
 ---
 
