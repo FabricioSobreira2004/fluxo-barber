@@ -31,6 +31,16 @@ ser feito perto do lançamento de verdade pra clientes pagantes.
 
 ## 🔧 Para fazer agora
 
+### Rodar a migration 005 (função nova pra página pública)
+
+`supabase/migrations/005_barbearia_pronta_publica.sql` ainda **não foi executada**.
+Ela cria a função `barbearia_esta_pronta(p_slug)`, que a página pública `/b/[slug]`
+usa agora pra saber se a barbearia já tem barbeiro + serviço + horário cadastrados
+(sem isso rodado, a página pública vai sempre tratar a barbearia como "não pronta",
+mesmo quando já está — ela cai no `data: pronta` vindo `null`/erro da chamada RPC,
+que o código trata como "não", por segurança). Copie o conteúdo do arquivo e rode
+no **SQL Editor do Supabase**, do mesmo jeito que as migrations anteriores.
+
 ### Apagar a conta de teste do tutorial guiado
 
 Pra testar o tour/checklist da Parte B desta rodada, criei UMA conta de teste no seu

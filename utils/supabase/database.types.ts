@@ -306,6 +306,13 @@ export type Database = { // o tipo raiz: uma chave por "schema" do Postgres (só
       [_ in never]: never // não criamos nenhuma view no banco ainda
     }
     Functions: { // uma entrada por função (RPC) chamada pelo site, com os tipos de entrada (Args) e saída (Returns)
+      // NOTA: "barbearia_esta_pronta" ainda NÃO existe no banco de verdade (migration 005, ainda não
+      // executada — ver PENDENCIAS.md); essa entrada foi adicionada na mão, igual às outras desta
+      // seção, só pra o TypeScript já aceitar a chamada supabase.rpc(...) antes de você rodar a migration.
+      barbearia_esta_pronta: { // chamada pela página pública (app/b/[slug]/page.tsx), pra saber se já aceita agendamento sem expor nenhum dado
+        Args: { p_slug: string }
+        Returns: boolean
+      }
       buscar_barbearia_publica: { // chamada pela página pública (app/b/[slug]/page.tsx)
         // NOTA: a CLI marca "endereco"/"telefone"/"nome" como não-nulos aqui, mas a coluna real em
         // "barbearias" aceita null -- é uma limitação do gerador para funções "returns table" (ele não
