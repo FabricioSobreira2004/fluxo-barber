@@ -10,6 +10,79 @@ rodada em "Concluído", "Para fazer agora" e "Pré-lançamento".
 
 ---
 
+## Nova rodada — animações GSAP na landing page (outubro de 2026)
+
+### 1. GSAP instalado
+**Arquivo:** `package.json`
+- `npm install gsap @gsap/react`. Só essas duas dependências; nada mais mudou
+  no projeto.
+
+### 2. Hero (título, subtítulo e botões) com animação de entrada
+**Arquivo novo:** `components/landing/Hero.tsx`
+- Virou um Client Component separado (antes esse bloco vivia dentro de
+  `app/page.tsx`, que é Server Component). Ao carregar a página, uma
+  timeline do GSAP anima: título (fade + leve deslize de baixo pra cima) →
+  subtítulo, começando um pouco antes do título terminar → os dois botões
+  ("Criar conta gratuita" / "Já tenho conta"), um logo depois do outro.
+- Usa o hook `useGSAP` (de `@gsap/react`), que limpa a animação sozinho
+  quando o componente desmonta — não precisei escrever nenhum `useEffect`
+  manual de limpeza.
+
+### 3. Cards de benefício com ScrollTrigger + brilho no hover
+**Arquivo novo:** `components/landing/Beneficios.tsx`
+- Os 4 cards (antes dentro de `app/page.tsx`) também viraram um Client
+  Component. Cada card aparece (fade + sobe de baixo) conforme entra na
+  tela ao rolar a página, com um pequeno atraso entre um e outro
+  (`stagger`). A animação só roda uma vez — `once: true` no
+  `scrollTrigger` — não refaz se o usuário rolar pra cima e descer de novo.
+- O brilho dourado no hover dos ícones **não usa GSAP** — é só CSS
+  (`transition` + `drop-shadow` do Tailwind), porque é um efeito simples de
+  hover; usar JavaScript pra isso seria mais pesado sem necessidade. Pra
+  respeitar "movimento reduzido" mesmo sendo CSS puro, usei o prefixo
+  `motion-safe:` do Tailwind (ele só aplica a classe quando o sistema
+  **não** pediu movimento reduzido).
+
+### 4. Poste do logo girando (só na landing page)
+**Arquivos:** `components/ui/PosteBarbeiro.tsx`, `components/ui/Logo.tsx`
+- O componente do poste ganhou uma prop `animado` (padrão `false`). Quando
+  `true`, o GSAP desloca o padrão (`<pattern>`) das listras em loop
+  infinito — como o padrão se repete a cada 16px, o deslocamento "dá a
+  volta" de forma invisível, e o efeito é uma listra girando sem parar,
+  andando na diagonal (igual a um poste de barbeiro de verdade). As
+  "tampas" douradas do topo/base não se mexem, só as listras.
+- `Logo` repassa essa prop pra `PosteBarbeiro`. **Só `app/page.tsx` passa
+  `animado`** — nas outras páginas (login, painel, etc.) o poste continua
+  parado, exatamente como antes.
+- Esse componente virou Client Component (`"use client"`) porque precisa do
+  `useGSAP`, mas isso não acontece à toa em todo o site: a animação em si
+  só roda quando `animado={true}`, então nas páginas sem essa prop não há
+  nenhum custo extra de animação, só o componente rodando no navegador em
+  vez do servidor (diferença imperceptível, é um ícone pequeno).
+
+### 5. Acessibilidade e performance
+- Todas as animações do GSAP ficam dentro de
+  `gsap.matchMedia().add("(prefers-reduced-motion: no-preference)", ...)`.
+  Quem configurou o sistema pra reduzir movimento nunca vê a timeline ser
+  criada — os elementos aparecem direto no estado final, sem nenhuma
+  animação.
+- Só anima `opacity`/`visibility` (via `autoAlpha`) e `transform`
+  (`x`/`y`), que são baratos pro navegador (não recalculam layout). A única
+  exceção é o giro do poste, que anima atributos de um `<pattern>` de SVG
+  (não é `transform`/`opacity`, mas também não dispara reflow, porque um
+  `<pattern>` dentro de `<defs>` não faz parte da árvore de layout).
+- **Não consegui ver a animação rodando ao vivo** pela ferramenta de
+  automação do navegador que uso aqui: a aba fica com
+  `document.visibilityState: "hidden"` (ela não é a aba "visível" de
+  verdade pro Chrome), e o GSAP depende de `requestAnimationFrame`, que o
+  navegador não dispara pra abas nesse estado — então a timeline trava no
+  meio. Conferi pelo DOM que os elementos certos são animados e que os
+  estilos avançam corretamente enquanto roda (sem erro nenhum no console);
+  só não deu pra ver o resultado final na tela. **Peço que você mesmo
+  recarregue `http://localhost:3000` e confira se está tudo suave** — o
+  `npm run dev` ficou rodando.
+
+---
+
 ## Nova rodada — tipos reais, email de contato e templates (outubro de 2026)
 
 ### 1. Tipos do banco gerados de verdade pela CLI
