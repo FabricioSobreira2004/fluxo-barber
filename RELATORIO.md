@@ -10,6 +10,79 @@ rodada em "Concluído", "Para fazer agora" e "Pré-lançamento".
 
 ---
 
+## Nova rodada — barbearia de demonstração (outubro de 2026)
+
+Criei `supabase/seeds/demo_barbearia.sql` — **não rodei em lugar nenhum**, é só
+pra você revisar e colar no SQL Editor do Supabase quando quiser. Resumo do que
+ele cria: 1 barbearia, 3 barbeiros, 8 serviços, horário terça-sábado, 25
+clientes fictícios, e agendamentos dos últimos ~30 dias + dos próximos 5 dias
+(mais movimento sexta/sábado, como pedido). Todo o SQL está comentado linha a
+linha, explicando o porquê de cada parte — os detalhes técnicos (por que cada
+constraint é respeitada, como a geração evita sobreposição de horário, etc.)
+estão nos comentários do próprio arquivo, pra não duplicar aqui.
+
+### As 3 sugestões de nome
+
+O arquivo já vem com **"Barbearia Imperial"** (a 1ª opção), mas é só trocar a
+primeira linha do `insert into barbearias` antes de rodar, se preferir outra:
+
+1. **Barbearia Imperial** — soa confiante e "premium", combina com a
+   identidade preto e dourado do próprio Fluxo Barber.
+2. **Studio Barba & Navalha** — nome com cara de barbearia mais moderna,
+   estilo "studio", pra um público mais jovem/descolado.
+3. **Barbearia Vintage Club** — remete ao estilo clássico retrô que muitas
+   barbearias usam hoje em dia, com um toque de "clube".
+
+### Por que o seed NÃO cria o dono
+
+De propósito: o dono precisa ser uma conta de verdade, com email e senha que
+*você* escolhe e controla — não faz sentido o SQL inventar uma senha. Por
+isso o arquivo cria a barbearia inteira (com todos os dados), mas a tabela
+`membros` (que é quem liga um usuário logado a uma barbearia, como "dono")
+fica vazia pra essa barbearia até você fazer esse último passo na mão.
+
+### Como ligar a barbearia de demonstração à sua conta
+
+1. **Crie uma conta pelo site**, em `/cadastro` (local ou no site publicado —
+   use o email que quiser pra essa demonstração). **Não preencha o
+   formulário de "Crie sua barbearia"** que aparece logo em seguida (o
+   onboarding) — se você preencher esse formulário, ele cria uma barbearia
+   **nova e diferente** da de demonstração, e a sua conta vira dona dela, não
+   da "demo". Se isso acontecer sem querer, não tem problema: é só repetir o
+   passo 3 abaixo mesmo assim (uma conta pode ser membro de mais de uma
+   barbearia) e usar o painel normalmente pra apagar a barbearia extra depois,
+   se não for mais usá-la.
+2. **Ache o id dessa conta**, no SQL Editor do Supabase:
+   ```sql
+   select id, email from auth.users where email = 'o-email-que-voce-usou@exemplo.com';
+   ```
+3. **Ligue a conta à barbearia de demonstração como dona**, colando o id
+   encontrado no passo 2 (este mesmo comando já está pronto, comentado, no
+   final do `demo_barbearia.sql`):
+   ```sql
+   insert into membros (barbearia_id, user_id, papel)
+   values (
+     (select id from barbearias where slug = 'demo'),
+     'cole-aqui-o-id-do-passo-2',
+     'dono'
+   );
+   ```
+4. **Entre no painel** (`/painel`, ou `/login` se já tinha saído) — a conta já
+   cai direto na Agenda da "Barbearia Imperial" (ou o nome que você escolheu),
+   com os barbeiros, serviços, horários e ~30 dias de agendamentos já
+   preenchidos. Como ela já tem os 3 requisitos (barbeiro + serviço + horário
+   ativos), o link público (`/b/demo`) já funciona de verdade, sem nenhum
+   aviso de "ainda não está pronto" — ótimo pra mostrar a página pública
+   funcionando numa demonstração ao vivo.
+
+**Pra apagar a demonstração depois:** `delete from barbearias where slug =
+'demo';` já leva tudo (barbeiros, serviços, horários, clientes, agendamentos
+e o vínculo em `membros`) — a conta de login em si (`auth.users`) continua
+existindo, seria apagada separadamente em Authentication → Users, se também
+não quiser mais usá-la.
+
+---
+
 ## Nova rodada — evita o "link compartilhado cedo demais" (outubro de 2026)
 
 Você relatou um problema real de experiência: nada impedia o dono de compartilhar o
