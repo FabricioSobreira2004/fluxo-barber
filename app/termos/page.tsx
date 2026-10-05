@@ -71,7 +71,8 @@ export default function PaginaTermos() { // página estática, não precisa de d
 
       <h2>9. Contato</h2>
       <p>
-        Dúvidas sobre estes termos podem ser enviadas para <strong>[EMAIL DE CONTATO]</strong>.
+        Dúvidas sobre estes termos podem ser enviadas para{" "}
+        <a href="mailto:contato.fluxobarber@gmail.com" className="font-medium text-dourado hover:text-dourado-claro">contato.fluxobarber@gmail.com</a>.
       </p>
     </PaginaLegal>
   );

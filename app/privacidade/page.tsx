@@ -68,7 +68,7 @@ export default function PaginaPrivacidade() { // página estática, não precisa
         tratamos seus dados, acessar os dados que temos sobre você, corrigir dados incompletos ou
         incorretos, e solicitar a exclusão dos seus dados (quando não houver outro motivo legal
         para mantê-los). Para exercer esses direitos, entre em contato pelo email{" "}
-        <strong>[EMAIL DE CONTATO]</strong>.
+        <a href="mailto:contato.fluxobarber@gmail.com" className="font-medium text-dourado hover:text-dourado-claro">contato.fluxobarber@gmail.com</a>.
       </p>
 
       <h2>8. Papel de cada um (controlador e operador)</h2>
@@ -89,7 +89,7 @@ export default function PaginaPrivacidade() { // página estática, não precisa
       <h2>10. Contato</h2>
       <p>
         Dúvidas, solicitações ou pedidos relacionados aos seus dados podem ser enviados para{" "}
-        <strong>[EMAIL DE CONTATO]</strong>.
+        <a href="mailto:contato.fluxobarber@gmail.com" className="font-medium text-dourado hover:text-dourado-claro">contato.fluxobarber@gmail.com</a>.
       </p>
     </PaginaLegal>
   );

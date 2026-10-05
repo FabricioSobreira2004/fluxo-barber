@@ -11,6 +11,8 @@ export function Footer() { // rodapé compartilhado: landing, login/cadastro, te
         <Link href="/termos" className="hover:text-texto">Termos de Uso</Link> {/* link pra ler as regras de uso do site */}
         {" · "}
         <Link href="/privacidade" className="hover:text-texto">Política de Privacidade</Link> {/* link pra ler como os dados são tratados */}
+        {" · "}
+        <a href="mailto:contato.fluxobarber@gmail.com" className="hover:text-texto">contato.fluxobarber@gmail.com</a> {/* email de contato, discreto junto dos outros links do rodapé */}
       </p>
       <p className="mt-1">
         Desenvolvido por{" "}
