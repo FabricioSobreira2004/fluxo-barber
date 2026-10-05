@@ -10,6 +10,127 @@ rodada em "Concluído", "Para fazer agora" e "Pré-lançamento".
 
 ---
 
+## Nova rodada — evita o "link compartilhado cedo demais" (outubro de 2026)
+
+Você relatou um problema real de experiência: nada impedia o dono de compartilhar o
+link antes de cadastrar barbeiro, serviço e horário — e aí o cliente caía numa página
+sem agendamento nenhum disponível. Resolvido com as 4 camadas pedidas, numa única
+regra central, usada em todo lugar.
+
+### A função central
+
+`utils/supabase/prontidao.ts`, `barbeariaProntaParaAgendamentos(supabase, barbeariaId)`
+— os 3 requisitos, e só eles: pelo menos 1 barbeiro ativo, 1 serviço ativo, e 1
+horário de trabalho cadastrado pra um barbeiro que esteja ativo AGORA (um horário de
+um barbeiro desativado não ajuda em nada). Devolve os 3 booleanos individuais (pra o
+checklist) + a lista do que falta, cada item já com o link da tela onde se resolve.
+Essa MESMA função (não uma parecida, a mesma) é chamada em: card "Seu link" (Agenda e
+Configurações), aviso antes de compartilhar, checklist, tour, e assistente de
+configuração rápida. A página pública (sem login) usa o equivalente em SQL — ver
+"migration 005" mais abaixo — mas é a mesma regra, só reescrita pra rodar sem sessão.
+
+### 1 — Selo de status no card "Seu link"
+
+Badge verde "Pronto para receber agendamentos" ou âmbar "Ainda não está pronto"
+(componente `Badge` que já existia, variantes `sucesso`/`aviso`). Quando não está
+pronto, aparece logo abaixo "Falta: cadastrar um serviço · definir os horários",
+cada trecho já é um link pra tela certa.
+
+### 2 — Aviso ao compartilhar cedo demais
+
+Os botões "Copiar link" e "Compartilhar no WhatsApp" (esse último virou `<button>`,
+antes era um `<a href>` — precisava poder interceptar o clique antes de abrir o link)
+agora checam `status.pronta` antes de agir. Se não está pronto, abre um modal (GSAP:
+fade + leve deslize/escala, respeitando `prefers-reduced-motion`) com a mensagem,
+"Completar agora" (leva pro primeiro item que falta) e "Compartilhar mesmo assim"
+(faz a ação original). Pronto, os botões agem direto, sem interromper nada.
+
+### 3 — Checklist em 2 grupos
+
+"Obrigatório para receber agendamentos" (barbeiro/serviço/horário, com "Seu link só
+funciona depois desses 3 passos.") e "Próximos passos" (copiar/compartilhar o link,
+receber o 1º agendamento). O "feito" dos 3 itens obrigatórios agora vem DIRETO do
+`status` central (antes era uma contagem separada, que não considerava se o
+barbeiro/serviço estava ativo) — nunca mais os dois lugares podem discordar sobre se
+o link funciona. "Receber o primeiro agendamento" perdeu o botão "Resolver" (não é
+algo que se resolve com um clique) e ganhou uma dica no lugar: "Compartilhe seu link
+para receber o primeiro."
+
+### 4 — Assistente de configuração rápida (a solução principal)
+
+Entre criar a barbearia (onboarding) e o tour, uma nova etapa:
+`/onboarding/configuracao-rapida`. 3 passos curtos, "Pular e configurar depois"
+sempre visível, barra de progresso e as trocas de etapa animadas com GSAP (fade +
+leve deslize, `prefers-reduced-motion` respeitado):
+
+1. **"Quem atende na sua barbearia?"** — campos de nome (mais de um, com
+   "+ Adicionar outro"), e o atalho "Eu mesmo atendo", que preenche com um nome
+   sugerido a partir do email do usuário (`utils/nome-usuario.ts`) — hoje o cadastro
+   não pede nome nenhum, então essa é a única pista disponível; o campo continua 100%
+   editável, então uma sugestão imperfeita não atrapalha.
+2. **"Quais serviços você oferece?"** — 3 chips de sugestão (Corte 30min, Barba
+   30min, Corte + Barba 60min), clicáveis, viram uma linha editável (nome, duração,
+   **preço obrigatório, nunca sugerido**) + "+ Adicionar outro" pra um serviço
+   personalizado.
+3. **"Quando vocês atendem?"** — segunda a sábado, 09:00–19:00 sugeridos (editável),
+   aplicado a TODOS os barbeiros da etapa 1.
+
+Nada é salvo no banco até o botão "Concluir", no final da etapa 3 — isso faz "pular"
+e "chegar ao fim sem preencher nada" se comportarem exatamente igual (nenhum dado
+criado), sem precisar de um caso especial pra cada um. A Server Action
+(`concluirConfiguracaoRapida`) ignora linhas em branco (barbeiro sem nome, serviço
+sem preço) uma a uma — uma etapa "pulada no meio" não quebra as outras.
+**A tela final só diz "Pronto! Seu link já aceita agendamentos" depois de conferir de
+verdade** (chama `barbeariaProntaParaAgendamentos` de novo, com os dados recém-criados)
+— se faltou algo (ex: só cadastrou barbeiro, sem serviço), mostra "Quase lá!" em vez
+de mentir.
+
+### 5 — Tour ajustado
+
+O passo do link (passo 5) agora recebe o `status` como prop; se `!status.pronta`, o
+texto do balão muda pra avisar: "Atenção: o link só funciona depois de cadastrar
+barbeiro, serviço e horários." Mesma fonte de verdade de novo — nunca um texto
+"tudo certo" quando não está.
+
+### 6 — Página pública mais acolhedora
+
+Troquei "Essa barbearia ainda não está com agendamento online disponível" (que soava
+a erro) por "[Nome] está finalizando a agenda online. Volte em breve!", com um botão
+"Falar com a barbearia" (WhatsApp, usando o telefone já cadastrado) quando a
+barbearia tem telefone — some sozinho quando não tem, sem expor nada a mais.
+
+**Migration nova, AINDA NÃO RODADA** (`supabase/migrations/005_barbearia_pronta_publica.sql`,
+ver `PENDENCIAS.md`): função `barbearia_esta_pronta(p_slug)`, a versão em SQL (security
+definer) da mesma regra central, pra a página pública saber se pode oferecer
+agendamento sem expor nenhum dado além de um booleano. **Até você rodar essa
+migration, a página pública sempre vai mostrar a mensagem "ainda não pronta", mesmo
+pras barbearias que já estão prontas de verdade** — o código já trata a chamada RPC
+que falha (função inexistente) como "não", por segurança, então nada quebra, só fica
+mais conservador que o necessário até a migration rodar.
+
+### Como testei
+
+Criei uma 2ª conta de teste (`teste.configrapida@fluxobarber.test`, ver
+`PENDENCIAS.md` pra apagar as duas) e testei de ponta a ponta, clicando de verdade:
+cadastro → onboarding → assistente de configuração rápida completo (1 barbeiro via
+"Eu mesmo atendo", Corte + Barba com preço, horário padrão) → tela final "Pronto!" →
+Agenda com selo verde → passo 5 do tour sem aviso (porque já está pronta) → página
+pública (mostra "não pronta" só porque a migration 005 ainda não rodou, como
+esperado). Depois, voltei pra conta de teste da rodada anterior (incompleta de
+propósito) e confirmei: selo âmbar com "Falta: cadastrar um serviço · definir os
+horários"; clicar em "Copiar link" abre o aviso, com o texto certo; página pública
+dela mostra a mensagem acolhedora (sem botão de WhatsApp, porque essa barbearia não
+tem telefone cadastrado). Testei em 375px (técnica de sempre, `<iframe>` com largura
+fixa) em todas as telas novas — sem rolagem horizontal em nenhuma.
+
+**Sobre ver as animações rodando:** mesma limitação de sempre (aba em segundo plano
+nesta ferramenta — o GSAP trava no meio de qualquer tween, incluindo o fade do modal
+de aviso e as transições entre etapas do assistente). Confirmei o conteúdo real por
+baixo do `visibility: hidden` que o GSAP deixa preso (via `textContent`, que ignora
+visibilidade, em vez de `innerText`/screenshot) — tudo certo, é só a ferramenta.
+
+---
+
 ## Nova rodada — ajustes na landing page + tutorial de boas-vindas (outubro de 2026)
 
 Rodada com 2 partes grandes: ajustes na landing page (Parte A) e o tutorial guiado do
