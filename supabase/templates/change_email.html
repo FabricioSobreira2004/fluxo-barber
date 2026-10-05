@@ -1,0 +1,94 @@
+<!--
+  Template: Change Email Address (alterar email)
+  Onde colar: painel do Supabase > Authentication > Email Templates > Change Email Address
+  Assunto sugerido: Confirme a alteracao do seu email - Fluxo Barber
+
+  Mesma lógica dos outros templates: link próprio pra "/auth/confirm"
+  (app/auth/confirm/route.ts), com "type=email_change" (valor que o Supabase
+  espera pra esse fluxo). O projeto ainda não tem uma tela de "trocar email"
+  no painel (ver PENDENCIAS.md) -- por isso "next" aponta pra
+  "/painel/configuracoes", que já existe e é um destino razoável depois de
+  confirmar. Quando essa funcionalidade for criada, ajuste o "next" se o
+  fluxo mandar o usuário pra outro lugar.
+  {{ .NewEmail }} é uma variável oficial do Supabase: mostra pro usuário qual
+  email está sendo confirmado, pra ele conferir antes de clicar.
+-->
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Confirme a alteração do seu email</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#0b0b0b;">
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0; mso-hide:all;">
+      Confirme a alteração do email da sua conta no Fluxo Barber.
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0b0b0b;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px; background-color:#151515; border:1px solid #2a2a2a; border-radius:12px;">
+            <tr>
+              <td style="padding:32px 32px 8px 32px; text-align:center;">
+                <span style="font-family:Arial, Helvetica, sans-serif; font-size:22px; font-weight:bold; color:#c9a227; letter-spacing:0.5px;">
+                  FLUXO BARBER
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 32px 0 32px;">
+                <h1 style="margin:0 0 16px 0; font-family:Arial, Helvetica, sans-serif; font-size:20px; line-height:1.4; color:#f5f5f5; font-weight:600;">
+                  Confirme seu novo email
+                </h1>
+                <p style="margin:0 0 24px 0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#a3a3a3;">
+                  Pediram para alterar o email da sua conta no Fluxo Barber para
+                  <strong style="color:#f5f5f5;">{{ .NewEmail }}</strong>. Clique no botão abaixo para confirmar essa alteração.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 32px 32px; text-align:center;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+                  <tr>
+                    <td style="border-radius:8px; background-color:#c9a227;">
+                      <a
+                        href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/painel/configuracoes"
+                        target="_blank"
+                        style="display:inline-block; padding:14px 32px; font-family:Arial, Helvetica, sans-serif; font-size:15px; font-weight:bold; color:#0b0b0b; text-decoration:none; border-radius:8px;"
+                      >
+                        Confirmar novo email
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 32px 32px;">
+                <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:1.6; color:#6b6b6b;">
+                  Se o botão não funcionar, copie e cole este link no seu navegador:
+                </p>
+                <p style="margin:8px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:1.6; word-break:break-all;">
+                  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/painel/configuracoes" style="color:#c9a227; text-decoration:underline;">
+                    {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/painel/configuracoes
+                  </a>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 32px; border-top:1px solid #2a2a2a; text-align:center;">
+                <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:12px; color:#6b6b6b;">
+                  Se você não pediu essa alteração, pode ignorar este email -- seu email de acesso continua o mesmo.
+                </p>
+                <p style="margin:8px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:11px; color:#4d4d4d;">
+                  Fluxo Barber &middot; contato.fluxobarber@gmail.com
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
