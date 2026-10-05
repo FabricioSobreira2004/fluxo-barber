@@ -41,30 +41,43 @@ mesmo quando já está — ela cai no `data: pronta` vindo `null`/erro da chamad
 que o código trata como "não", por segurança). Copie o conteúdo do arquivo e rode
 no **SQL Editor do Supabase**, do mesmo jeito que as migrations anteriores.
 
-### Apagar a conta de teste do tutorial guiado
+### Apagar as contas de teste (tutorial + configuração rápida)
 
-Pra testar o tour/checklist da Parte B desta rodada, criei UMA conta de teste no seu
-`localhost` (confirmação de email estava desligada, então não precisei de um email de
-verdade): `teste.tutorial@fluxobarber.test`, barbearia "Barbearia Tutorial Teste"
-(slug `barbearia-tutorial-teste`), com 1 barbeiro de teste ("João Barbeiro") — sem
-serviço, sem horário e sem agendamento algum cadastrado. Quando quiser apagar:
+Agora são DUAS contas de teste no seu `localhost` (confirmação de email estava
+desligada, então não precisei de email de verdade):
 
-1. **Confira antes de apagar** (SQL Editor do Supabase), pra ter certeza que é a
-   barbearia certa:
+- `teste.tutorial@fluxobarber.test` — "Barbearia Tutorial Teste" (slug
+  `barbearia-tutorial-teste`), da rodada anterior: 1 barbeiro ("João Barbeiro"), sem
+  serviço, sem horário — deixei de propósito "não pronta", pra testar o selo âmbar, o
+  aviso ao compartilhar, e o grupo "Obrigatório" do checklist ainda pendente. Também
+  usei essa conta pra testar "Ver tutorial novamente" (em Configurações), então o tour
+  está marcado como "não visto" de novo nela — sem problema, só reflexo do teste.
+- `teste.configrapida@fluxobarber.test` — "Barbearia Config Rapida Teste" (slug
+  `barbearia-config-rapida-teste`), desta rodada: passei pelo assistente de
+  configuração rápida até o fim (1 barbeiro, os serviços "Corte" e "Barba" com preço,
+  horário padrão segunda a sábado) — fica "pronta", pra testar o selo verde e o passo
+  5 do tour sem o aviso.
+
+Quando quiser apagar as duas:
+
+1. **Confira antes de apagar** (SQL Editor do Supabase), pra ter certeza que são as
+   barbearias certas:
    ```sql
-   select id, nome, slug, criado_em from barbearias where slug = 'barbearia-tutorial-teste';
+   select id, nome, slug, criado_em from barbearias
+   where slug in ('barbearia-tutorial-teste', 'barbearia-config-rapida-teste');
    ```
-2. **Apague a barbearia** — todas as tabelas (membros, barbeiros, serviços, clientes,
-   horários, agendamentos) têm `on delete cascade` ligado a `barbearia_id`, então
-   apagar só essa linha já leva tudo junto:
+2. **Apague as barbearias** — todas as tabelas (membros, barbeiros, serviços,
+   clientes, horários, agendamentos) têm `on delete cascade` ligado a
+   `barbearia_id`, então apagar essas 2 linhas já leva tudo junto:
    ```sql
-   delete from barbearias where slug = 'barbearia-tutorial-teste';
+   delete from barbearias
+   where slug in ('barbearia-tutorial-teste', 'barbearia-config-rapida-teste');
    ```
-3. **Apague o usuário**: painel do Supabase → **Authentication → Users**, procure
-   `teste.tutorial@fluxobarber.test` e apague por lá (o botão de apagar usuário fica
-   no menu "..." da linha dele). Pode ser antes ou depois do passo 2 — são
-   independentes (apagar o usuário sozinho não apagaria a barbearia, porque é a
-   barbearia que "aponta" pro dono, e não o contrário).
+3. **Apague os 2 usuários**: painel do Supabase → **Authentication → Users**,
+   procure `teste.tutorial@fluxobarber.test` e `teste.configrapida@fluxobarber.test`
+   e apague cada um por lá (botão no menu "..." da linha dele). Pode ser antes ou
+   depois do passo 2 — são independentes (apagar o usuário sozinho não apagaria a
+   barbearia, porque é a barbearia que "aponta" pro dono, e não o contrário).
 
 ### Testar o link de confirmação por email (preciso que você clique de verdade)
 

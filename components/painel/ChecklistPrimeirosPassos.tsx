@@ -80,14 +80,10 @@ export function ChecklistPrimeirosPassos({ itensObrigatorios, itensProximos, esc
             <ListaItensChecklist itens={itensObrigatorios} />
           </div>
 
-          {/* só mostra o grupo 2 se sobrar algo pendente nele — se os 3 obrigatórios ainda faltam,
-              não faz sentido empurrar "próximos passos" pra atenção do dono ainda */}
-          {itensProximos.some((item) => !item.feito) && (
-            <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-semibold text-texto">Próximos passos</h3>
-              <ListaItensChecklist itens={itensProximos} />
-            </div>
-          )}
+          <div className="flex flex-col gap-2">
+            <h3 className="text-sm font-semibold text-texto">Próximos passos</h3>
+            <ListaItensChecklist itens={itensProximos} />
+          </div>
         </div>
       )}
     </Card>

@@ -32,5 +32,5 @@ export async function criarBarbearia(_estadoAnterior: EstadoOnboarding, formData
     return { erro: "Não foi possível criar a barbearia. Tente novamente em instantes." }; // qualquer outro erro inesperado
   }
 
-  redirect("/painel"); // sucesso: a barbearia existe e o usuário já é o dono dela
+  redirect("/onboarding/configuracao-rapida"); // sucesso: a barbearia existe; antes do tour, oferece configurar barbeiro/serviço/horário rapidinho
 }
