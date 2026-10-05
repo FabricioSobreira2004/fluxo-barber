@@ -170,3 +170,88 @@ select count(*) from clientes where telefone like '2190000000%' or nome like 'TE
 `PENDENCIAS.md` — tem um aviso pra remover o horário de teste do domingo
 (20:00–23:59) do "barbeiro1test", se você não for usar esse horário de
 verdade.
+
+---
+
+## Teste visual — ícone sobrepondo a hora + botão cortado em Horários (outubro de 2026)
+
+Bug relatado por você: na tela **Horários** do painel, no celular (~375px),
+o ícone de relógio dos campos de hora ficava em cima do texto ("06:0" com o
+ícone no lugar do último dígito) e o botão "+" de adicionar ficava
+espremido pra fora do card.
+
+### Causa raiz (as duas, juntas)
+
+1. **`FormularioIntervalo.tsx`** tinha os 2 campos de hora com largura fixa
+   (`w-28` = 112px cada) dentro de uma linha só, ao lado do botão — a soma
+   (2×112px + "até" + gaps + botão) passava da largura disponível do card
+   em telas estreitas, e o navegador espremia tudo, inclusive o botão pra
+   fora.
+2. **`components/ui/Input.tsx`** (o componente usado em TODO campo de
+   hora/data do site) tinha dois problemas de CSS que se somavam: (a) o
+   `className` de quem usa o componente ia pro `<input>` escondido dentro
+   de um `<div>` sem nenhum controle de tamanho — então `w-28`/`flex-1`
+   passados por fora não controlavam de verdade o espaço que o campo
+   ocupava; e (b) o ícone nativo do navegador (escondido com `opacity: 0`)
+   continuava ocupando espaço de verdade *dentro* do campo, disputando
+   lugar com o texto do valor digitado.
+
+### Correção
+
+- `Input.tsx`: o `className` de quem usa o componente agora vai no `<div>`
+  de fora (que é quem realmente participa do layout flex/grid de fora),
+  não mais no `<input>` escondido dentro. O indicador nativo do navegador
+  virou `position: absolute` (via `[&::-webkit-calendar-picker-indicator]`),
+  saindo do fluxo do texto — ele continua clicável, só que numa área fixa
+  de 36px coladinha na borda direita, embaixo do nosso ícone dourado, sem
+  mais brigar por espaço com o valor digitado (que ganhou `pr-9`,
+  exatamente essa mesma largura reservada).
+- `FormularioIntervalo.tsx`: início/fim agora usam `flex-1 min-w-0` (dividem
+  o espaço disponível e **encolhem de verdade**, em vez de um tamanho fixo
+  que não cabia). Layout responsivo: abaixo de `sm` (640px), início+fim
+  ficam numa linha e o botão "Adicionar" vai pra uma 2ª linha, em largura
+  total, com o texto "Adicionar" ao lado do ícone (mais fácil de tocar no
+  celular); a partir de `sm`, volta a ser tudo numa linha só, com o botão
+  como um quadradinho só com o ícone — igual era antes em telas largas.
+
+### Como testei
+
+A ferramenta de navegador que uso não consegue medir elementos por
+JavaScript nesta sessão (`getBoundingClientRect()` voltava tudo zerado —
+mesma limitação de aba em segundo plano já registrada em rodadas
+anteriores, só que desta vez afetando a MEDIÇÃO em vez da animação).
+Contornei isso criando `<iframe>`s **visíveis** com a largura exata de
+teste, navegando cada um pra página real, e usando **screenshot** (que
+força um frame de verdade, ao contrário da medição via JS) pra conferir
+visualmente — não um teste automatizado "pixel perfect", mas uma conferência visual real em cada largura.
+
+| Largura | Local testado | Resultado |
+|---|---|---|
+| 320px | Horários (vazio e preenchido) | ✅ sem sobreposição; início/fim numa linha, botão "+ Adicionar" em linha própria, sem cortar |
+| 375px | Horários (vazio e preenchido) | ✅ idem |
+| 375px | Agenda → Novo agendamento (data + hora) | ✅ sem sobreposição (campo em largura total, 1 coluna) |
+| 375px | Configuração rápida → "Quando vocês atendem?" (início/fim) | ✅ sem sobreposição |
+| 414px | Horários | ✅ sem sobreposição, layout em 1 linha (início/fim/botão) já cabe |
+| ~1100px (desktop) | Horários, com um valor real digitado ("18:45") | ✅ texto 100% legível, ícone separado, botão volta a ser o quadradinho ao lado dos campos |
+| ~1392px (desktop) | Agenda → Novo agendamento (20/10/2026, 14:30) | ✅ sem sobreposição |
+
+**Sobre Chrome Android / Safari iPhone especificamente:** não tenho como
+abrir um emulador/dispositivo de verdade nesta ferramenta. A correção usa
+`[&::-webkit-calendar-picker-indicator]`, que é o seletor que tanto o
+Chrome (Blink) quanto o Safari (WebKit) reconhecem pra esse indicador
+nativo — os dois motores por trás dos dois navegadores citados — então a
+técnica deve se comportar igual nos dois, mas vale você confirmar num
+aparelho de verdade quando puder.
+
+### Outros lugares com input de hora/data (conferidos, sem o mesmo bug)
+
+- `app/painel/agenda/FormularioNovoAgendamento.tsx` (data + hora): cada
+  campo já ocupava a célula inteira de um grid de 1 coluna no celular —
+  nunca tinha o problema do botão espremido, só se beneficiava da correção
+  de padding/ícone do `Input.tsx`.
+- `app/onboarding/configuracao-rapida/AssistenteConfiguracaoRapida.tsx`
+  (início/fim do horário padrão): já usava `flex-1` nos `<div>`s de fora
+  (não no `Input`), então nunca teve o bug do `className` indo pro lugar
+  errado — só ganhou a correção do ícone/padding também.
+- `app/b/[slug]/FormularioAgendamentoPublico.tsx` (data, página pública):
+  mesmo padrão de campo em largura total — sem risco do bug de layout.

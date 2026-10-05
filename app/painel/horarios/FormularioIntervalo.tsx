@@ -19,17 +19,29 @@ export function FormularioIntervalo({ barbeiroId, diaSemana }: PropriedadesFormu
 
   return (
     <form action={acao} className="flex flex-col gap-2"> {/* ao enviar, o React chama a Server Action automaticamente */}
-      <div className="flex items-center gap-2">
-        <Input type="time" name="inicio" required className="w-28" aria-label="Início" />
-        <span className="text-sm text-texto-secundario">até</span>
-        <Input type="time" name="fim" required className="w-28" aria-label="Fim" />
+      {/* "flex-col" no celular: início/fim numa linha, botão embaixo em largura total (ver abaixo).
+          A partir de "sm" (640px), volta a caber tudo numa linha só, como antes. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-2"> {/* "min-w-0": permite os campos encolherem de verdade, em vez de estourar a largura do card */}
+          {/* "flex-1 min-w-0" em cada campo: os dois dividem o espaço disponível igualmente, e
+              podem encolher abaixo da largura "natural" do campo de hora — sem isso (ex: "w-28"
+              fixo de antes), a soma dos dois campos + botão não cabia em telas estreitas, e o
+              botão era empurrado pra fora do card */}
+          <Input type="time" name="inicio" required className="min-w-0 flex-1" aria-label="Início" />
+          <span className="shrink-0 text-sm text-texto-secundario">até</span>
+          <Input type="time" name="fim" required className="min-w-0 flex-1" aria-label="Fim" />
+        </div>
         <button
           type="submit"
           disabled={pendente} // desabilita enquanto a Server Action está rodando
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-dourado text-dourado transition-colors hover:bg-dourado/10 disabled:opacity-50"
+          // "w-full" no celular (ocupa a linha inteira, com o texto "Adicionar" visível) e volta a
+          // ser um quadradinho só com o ícone ("sm:w-9", sem o texto) a partir de "sm", lado a lado
+          // com os campos — o mesmo visual de antes em telas largas
+          className="flex h-9 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-dourado px-3 text-sm text-dourado transition-colors hover:bg-dourado/10 disabled:opacity-50 sm:w-9 sm:px-0"
           aria-label="Adicionar intervalo"
         >
-          <Plus className="h-4 w-4" aria-hidden /> {/* ícone decorativo; aria-label no botão já explica a ação pra leitor de tela */}
+          <Plus className="h-4 w-4 shrink-0" aria-hidden /> {/* decorativo; o aria-label do botão já explica a ação pra leitor de tela */}
+          <span className="sm:hidden">Adicionar</span> {/* só aparece junto do ícone quando o botão está em largura total (celular) */}
         </button>
       </div>
       <FormMessage tipo="erro">{estado.erro}</FormMessage> {/* só aparece quando "estado.erro" tem algum texto */}
