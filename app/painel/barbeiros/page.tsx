@@ -27,12 +27,14 @@ export default async function PaginaBarbeiros() {
 
       <div className="flex flex-col gap-3">
         {(barbeiros ?? []).map((barbeiro) => ( // lista cada barbeiro com seu status e o botão de alternar
-          <Card key={barbeiro.id} className="flex items-center justify-between gap-4 p-4">
-            <div className="flex items-center gap-3">
+          // "flex-col" no celular evita que um nome comprido empurre os botões de ação pra fora do card;
+          // a partir de "sm" (640px) já cabe tudo numa linha só, então volta a ser "flex-row"
+          <Card key={barbeiro.id} className="flex flex-col items-start gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <span className="text-texto">{barbeiro.nome}</span>
               <Badge variante={barbeiro.ativo ? "sucesso" : "neutro"}>{barbeiro.ativo ? "Ativo" : "Inativo"}</Badge>
             </div>
-            <div className="flex items-center gap-4"> {/* os dois botões de ação ficam lado a lado */}
+            <div className="flex shrink-0 items-center gap-4"> {/* os dois botões de ação ficam lado a lado */}
               {/* form com Server Action "pré-preenchida" via bind: ao clicar, já manda o id e o valor oposto do atual */}
               <form action={alternarAtivoBarbeiro.bind(null, barbeiro.id, !barbeiro.ativo)}>
                 <button type="submit" className="text-sm text-dourado hover:text-dourado-claro">

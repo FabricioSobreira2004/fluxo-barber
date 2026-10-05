@@ -30,9 +30,9 @@ const beneficios = [ // lista de benefícios mostrados na landing page, cada um 
 export default function Home() { // landing page pública: primeira tela que um visitante vê
   return (
     <main className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between px-6 py-5 md:px-12"> {/* topo com logo e ações de conta */}
-        <Logo />
-        <nav className="flex items-center gap-3">
+      <header className="flex items-center justify-between gap-2 px-4 py-5 sm:px-6 md:px-12"> {/* topo com logo e ações de conta */}
+        <Logo className="text-lg sm:text-2xl" /> {/* menor no celular, senão disputa espaço com os botões ao lado */}
+        <nav className="flex items-center gap-2 sm:gap-3">
           <Link href="/login" className={classesBotao("secundario")}>Entrar</Link> {/* quem já tem conta */}
           <Link href="/cadastro" className={classesBotao("primario")}>Criar conta</Link> {/* quem é novo */}
         </nav>

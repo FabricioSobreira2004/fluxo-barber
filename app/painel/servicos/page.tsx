@@ -28,9 +28,11 @@ export default async function PaginaServicos() {
 
       <div className="flex flex-col gap-3">
         {(servicos ?? []).map((servico) => ( // lista cada serviço com duração, preço, status e o botão de alternar
-          <Card key={servico.id} className="flex items-center justify-between gap-4 p-4">
+          // "flex-col" no celular evita que um nome de serviço comprido empurre os botões de ação pra fora do card;
+          // a partir de "sm" (640px) já cabe tudo numa linha só, então volta a ser "flex-row"
+          <Card key={servico.id} className="flex flex-col items-start gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="text-texto">{servico.nome}</span>
                 <Badge variante={servico.ativo ? "sucesso" : "neutro"}>{servico.ativo ? "Ativo" : "Inativo"}</Badge>
               </div>
@@ -40,7 +42,7 @@ export default async function PaginaServicos() {
                 <span className="font-bold tabular-nums">{centavosParaReais(servico.preco_centavos)}</span>
               </span>
             </div>
-            <div className="flex items-center gap-4"> {/* os dois botões de ação ficam lado a lado */}
+            <div className="flex shrink-0 items-center gap-4"> {/* os dois botões de ação ficam lado a lado */}
               {/* form com Server Action "pré-preenchida" via bind: ao clicar, já manda o id e o valor oposto do atual */}
               <form action={alternarAtivoServico.bind(null, servico.id, !servico.ativo)}>
                 <button type="submit" className="text-sm text-dourado hover:text-dourado-claro">
