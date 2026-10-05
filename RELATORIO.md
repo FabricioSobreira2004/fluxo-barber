@@ -10,6 +10,53 @@ rodada em "Concluído", "Para fazer agora" e "Pré-lançamento".
 
 ---
 
+## Nova rodada — link de confirmação, copy de vendas e animações mais fortes (outubro de 2026)
+
+Esta rodada teve 3 partes independentes, cada uma com seu próprio commit.
+
+### Parte 1 — link de confirmação compatível com o template padrão do Supabase
+
+**Arquivos:** `app/auth/confirm/route.ts`, `app/auth/link-invalido/page.tsx` (novo),
+`app/login/page.tsx`, `app/login/FormularioLogin.tsx`, `PENDENCIAS.md`
+
+- **O problema:** no plano gratuito do Supabase, sem SMTP próprio, não dá pra
+  editar os templates de email — todo email sai com o template **padrão** do
+  Supabase, que usa `{{ .ConfirmationURL }}`. Esse link aponta primeiro pro
+  servidor do Supabase (`.../auth/v1/verify?token=...&type=...&redirect_to=...`),
+  que confirma o token sozinho e só DEPOIS redireciona o navegador de volta
+  pro site, com um parâmetro `?code=...` na URL (fluxo PKCE) — não com
+  `token_hash` + `type`, que era o único formato que `app/auth/confirm/route.ts`
+  sabia processar. Confirmei esse comportamento na documentação atual do
+  Supabase (fluxo PKCE / `exchangeCodeForSession`).
+- **A correção:** a rota agora aceita os dois formatos — `token_hash` + `type`
+  (via `verifyOtp()`, formato que o template personalizado em
+  `supabase/templates/` usa, pra quando tivermos SMTP próprio) **e** `code`
+  (via `exchangeCodeForSession()`, formato do template padrão, que é o que
+  está em uso hoje). Nenhum dos dois formatos quebra o outro.
+- **`emailRedirectTo`/`redirectTo` já estavam certos:** conferi
+  `app/cadastro/actions.ts` (manda pra `/auth/confirm?next=/onboarding`) e
+  `app/esqueci-senha/actions.ts` (manda pra `/auth/confirm?next=/redefinir-senha`)
+  — os dois já apontavam pro destino certo, não precisei mudar nada aí.
+- **Link inválido ou expirado:** antes isso caía em `/login?erro=link_invalido`,
+  com uma mensagem genérica que nem sempre fazia sentido (ex: mandava "tentar
+  entrar" pra quem só queria recuperar a senha). Criei uma página dedicada,
+  `/auth/link-invalido?motivo=recovery|signup`, com mensagem e botão diferentes
+  pra cada caso: recuperação de senha manda pra `/esqueci-senha` (pedir um novo
+  link), cadastro manda pra `/cadastro` (criar de novo, o que reenvia o email de
+  confirmação). Removi o tratamento antigo de `?erro=` em `/login`, que ficou
+  sem uso.
+- **Teste de ponta a ponta:** como isso exige clicar num link de email de
+  verdade, não dá pra eu testar sozinho — deixei o passo a passo completo (3
+  cenários: cadastro, esqueci senha, e link usado duas vezes) no
+  `PENDENCIAS.md`, seção "Para fazer agora".
+- **`PENDENCIAS.md` reorganizado:** "colar os templates de email" saiu de
+  "Para fazer agora" e foi pra "Pré-lançamento", junto com o SMTP próprio e o
+  "Religar Confirm email" — expliquei a cadeia de dependência completa:
+  domínio `fluxobarber.com.br` → SMTP próprio → liberação pra editar
+  templates → religar a confirmação de email.
+
+---
+
 ## Nova rodada — animações GSAP na landing page (outubro de 2026)
 
 ### 1. GSAP instalado

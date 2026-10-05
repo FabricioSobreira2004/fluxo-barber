@@ -10,11 +10,10 @@ import { entrar } from "./actions"; // Server Action de login
 
 interface PropriedadesFormularioLogin { // o que a página de login passa pra esse componente
   redirecionarPara: string; // pra onde ir depois de logar (vem de ?redirecionar=... na URL)
-  erroInicial?: string; // erro vindo de outra página (ex: link de confirmação de email inválido)
 }
 
-export function FormularioLogin({ redirecionarPara, erroInicial }: PropriedadesFormularioLogin) {
-  const [estado, acao, pendente] = useActionState(entrar, { erro: erroInicial }); // já começa com o erro, se vier algum
+export function FormularioLogin({ redirecionarPara }: PropriedadesFormularioLogin) {
+  const [estado, acao, pendente] = useActionState(entrar, {}); // nenhuma mensagem antes do primeiro envio
 
   return (
     <form action={acao} className="flex flex-col gap-4"> {/* ao enviar, o React chama a Server Action automaticamente */}

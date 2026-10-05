@@ -31,43 +31,36 @@ ser feito perto do lançamento de verdade pra clientes pagantes.
 
 ## 🔧 Para fazer agora
 
-### Colar os 4 templates de email no painel do Supabase
+### Testar o link de confirmação por email (preciso que você clique de verdade)
 
-Criei os templates em HTML (preto e dourado, no estilo do Fluxo Barber) na
-pasta `supabase/templates/` deste projeto. Eles **não são aplicados
-automaticamente** — o Supabase não lê essa pasta sozinho; você precisa colar
-o conteúdo de cada arquivo no painel. Passo a passo:
+A rota `app/auth/confirm/route.ts` agora entende os dois formatos de link que
+o Supabase pode mandar (veja a explicação completa na seção "Colar os 4
+templates..." lá embaixo, em Pré-lançamento). Como eu não tenho como receber
+e clicar num email de verdade, preciso que você confira isso manualmente:
 
-1. Abra o painel do Supabase → **Authentication → Email Templates**.
-2. Para cada um dos 4 templates abaixo:
-   - Clique no nome do template na lista (ex: "Confirm signup").
-   - Apague o conteúdo que estiver no campo de corpo do email.
-   - Abra o arquivo correspondente neste projeto, copie **todo** o conteúdo
-     (incluindo o comentário `<!-- ... -->` do topo, se quiser — ele só existe
-     pra te explicar o link, não atrapalha o envio) e cole no painel.
-   - No campo **Subject** (assunto), cole o assunto sugerido abaixo.
-   - Clique em **Save**.
+**Teste 1 — cadastro novo:**
+1. Vá em `/cadastro` (local ou no site publicado) e crie uma conta com um
+   email de verdade que você consiga acessar.
+2. Se aparecer a mensagem "Conta criada! Enviamos um link de confirmação...",
+   abra o email (confira a caixa de spam também) e clique no link.
+3. **Esperado:** você cai direto no `/onboarding`, já logado. Se cair numa
+   tela "Link inválido ou expirado" com o botão "Criar conta de novo", me
+   avise com o link completo que apareceu na barra de endereço — ele ajuda a
+   descobrir o que deu errado.
 
-| Template no painel | Arquivo neste projeto | Assunto sugerido |
-|---|---|---|
-| Confirm signup | `supabase/templates/confirm_signup.html` | Confirme seu cadastro no Fluxo Barber |
-| Reset Password | `supabase/templates/reset_password.html` | Redefina sua senha — Fluxo Barber |
-| Change Email Address | `supabase/templates/change_email.html` | Confirme a alteração do seu email — Fluxo Barber |
-| Magic Link | `supabase/templates/magic_link.html` | Seu link de acesso — Fluxo Barber |
+**Teste 2 — esqueci minha senha (esse era o que estava quebrado):**
+1. Vá em `/esqueci-senha`, digite o email de uma conta que já existe e envie.
+2. Abra o email de recuperação e clique no link.
+3. **Esperado:** você cai em `/redefinir-senha`, já com uma sessão temporária
+   (dá pra digitar a nova senha direto, sem precisar logar de novo).
 
-**Por que os links desses templates são diferentes do padrão do Supabase:**
-o botão padrão do Supabase (`{{ .ConfirmationURL }}`) aponta direto pro
-servidor do Supabase, que confirma o link e manda a sessão de volta sozinho.
-Esse projeto, em vez disso, tem sua própria rota `app/auth/confirm/route.ts`,
-que recebe o link, confirma chamando `supabase.auth.verifyOtp()` e só depois
-decide pra onde mandar o usuário (onboarding, redefinir senha, etc.). Por
-isso os templates usam um link manual, apontando pra essa rota, com os
-parâmetros `token_hash` e `type` que ela espera — expliquei isso em
-comentário no topo de cada arquivo `.html`.
-
-**Teste depois de colar:** peça pra criar uma conta nova (ou usar "esqueci
-minha senha") e confira se o email chega em português, com a cor certa, e se
-o link leva pro lugar esperado.
+**Teste 3 — link usado duas vezes (confere a tela de erro):**
+1. Depois de clicar em qualquer um dos links acima, clique nele **de novo**
+   (ex: abra o mesmo email outra vez e clique no link mais uma vez).
+2. **Esperado:** cai em "Link inválido ou expirado" (`/auth/link-invalido`),
+   com uma mensagem explicando que o link já foi usado ou expirou, e um botão
+   pra pedir um novo (volta pra `/cadastro` ou `/esqueci-senha`, dependendo do
+   teste).
 
 ## 🚀 Pré-lançamento (última etapa, antes de abrir pra clientes de verdade)
 
@@ -75,12 +68,44 @@ Essas pendências só importam quando o Fluxo Barber for sair do modo "só eu
 testando" para receber clientes pagantes de verdade. Não precisa resolver
 agora, mas fica registrado pra não esquecer:
 
-- **Religar "Confirm email"** (Authentication → Providers → Email) **junto
-  com** configurar um serviço de email próprio via SMTP (ex: Resend, que tem
-  plano gratuito generoso) em Authentication → Settings → SMTP Settings. Os
-  dois precisam andar juntos: religar a confirmação sem um SMTP próprio
-  esbarra rápido no limite de envio de email do plano gratuito do Supabase
-  (já vimos o erro `over_email_send_rate_limit` nos testes).
+- **Colar os 4 templates de email no painel do Supabase** (depende do SMTP
+  próprio, item logo abaixo — por isso só entra aqui, em Pré-lançamento).
+  Criei os templates em HTML (preto e dourado, no estilo do Fluxo Barber) na
+  pasta `supabase/templates/` deste projeto, mas **o plano gratuito do
+  Supabase, sem um SMTP próprio configurado, não deixa editar os templates de
+  email** — por isso, hoje, todo email sai com o texto e o visual padrão do
+  Supabase (em inglês, sem a cor da marca). Assim que o SMTP próprio
+  estiver configurado (item abaixo), o passo a passo é:
+  1. Abra o painel do Supabase → **Authentication → Email Templates**.
+  2. Para cada um dos 4 templates abaixo: clique no nome na lista, apague o
+     conteúdo atual, cole o conteúdo do arquivo `.html` correspondente deste
+     projeto, cole o assunto sugerido no campo **Subject**, e clique em
+     **Save**.
+
+  | Template no painel | Arquivo neste projeto | Assunto sugerido |
+  |---|---|---|
+  | Confirm signup | `supabase/templates/confirm_signup.html` | Confirme seu cadastro no Fluxo Barber |
+  | Reset Password | `supabase/templates/reset_password.html` | Redefina sua senha — Fluxo Barber |
+  | Change Email Address | `supabase/templates/change_email.html` | Confirme a alteração do seu email — Fluxo Barber |
+  | Magic Link | `supabase/templates/magic_link.html` | Seu link de acesso — Fluxo Barber |
+
+  Esses templates usam um link **manual** (`token_hash` + `type`), apontando
+  direto pra `app/auth/confirm/route.ts`, em vez do link padrão do Supabase
+  (que passa primeiro pelo servidor deles). A rota já está pronta pra
+  entender os dois formatos ao mesmo tempo, então colar os templates não
+  quebra nada que já está funcionando hoje.
+- **SMTP próprio** (ex: Resend, que tem plano gratuito generoso) em
+  Authentication → Settings → SMTP Settings — é o que **libera a edição dos
+  templates** acima, e também tira o envio de email do limite baixo do plano
+  gratuito do Supabase (já vimos o erro `over_email_send_rate_limit` nos
+  testes). Pra configurar direito (SPF/DKIM, e-mails não caindo no spam),
+  o ideal é enviar a partir de um endereço no domínio **`fluxobarber.com.br`**
+  — então esse item depende do item "Domínio próprio" logo abaixo.
+- **Religar "Confirm email"** (Authentication → Providers → Email) — hoje,
+  provavelmente, uma conta nova já nasce logada, sem precisar confirmar o
+  email (bom pra testar rápido, ruim pra produção, porque não garante que o
+  email da barbearia é de verdade). Só religue **depois** do SMTP próprio
+  estar configurado, senão esbarra no mesmo limite de envio citado acima.
 - **Revisão dos Termos de Uso e da Política de Privacidade por um advogado**
   antes do lançamento comercial — os textos atuais (`/termos` e
   `/privacidade`) são um modelo inicial, em linguagem simples, mas não

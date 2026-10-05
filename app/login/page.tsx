@@ -14,15 +14,9 @@ export default async function PaginaLogin(props: PageProps<"/login">) { // PageP
   const redirecionarPara = // normaliza pra sempre virar uma única string
     typeof redirecionarBruto === "string" ? redirecionarBruto : "/onboarding";
 
-  const erroBruto = parametros.erro; // ex: "link_invalido", mandado pela rota /auth/confirm quando o link falha
-  const erroInicial = // traduz o código de erro em uma mensagem legível (só temos um caso por enquanto)
-    erroBruto === "link_invalido"
-      ? "Esse link de confirmação é inválido ou expirou. Tente entrar ou cadastre-se novamente."
-      : undefined;
-
   return (
     <AuthCard titulo="Entrar">
-      <FormularioLogin redirecionarPara={redirecionarPara} erroInicial={erroInicial} />
+      <FormularioLogin redirecionarPara={redirecionarPara} />
     </AuthCard>
   );
 }
