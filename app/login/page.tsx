@@ -1,5 +1,11 @@
+import { type Metadata } from "next"; // tipo da metadata desta página
 import { AuthCard } from "@/components/AuthCard"; // layout compartilhado das telas de autenticação
 import { FormularioLogin } from "./FormularioLogin"; // formulário (Client Component) desta página
+
+export const metadata: Metadata = { // título/descrição específicos desta página
+  title: "Entrar | Fluxo Barber",
+  description: "Entre na sua conta do Fluxo Barber para acessar o painel da sua barbearia.",
+};
 
 export default async function PaginaLogin(props: PageProps<"/login">) { // PageProps gerado pelo Next.js a partir da rota
   const parametros = await props.searchParams; // searchParams é uma Promise no Next.js 16, por isso o await

@@ -1,9 +1,12 @@
+import { type Metadata } from "next"; // tipo da metadata desta página
 import { obterBarbeariaAtual } from "@/utils/supabase/barbearia-atual"; // descobre a barbearia do usuário logado
 import { Badge } from "@/components/ui/Badge"; // etiqueta colorida de status
 import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
 import { BotaoApagar } from "@/components/painel/BotaoApagar"; // botão "Apagar" com confirmação, reutilizado em Barbeiros/Serviços
 import { FormularioNovoBarbeiro } from "./FormularioNovoBarbeiro"; // formulário (Client Component) de cadastro
 import { alternarAtivoBarbeiro, apagarBarbeiro } from "./actions"; // Server Actions usadas nos botões de cada linha
+
+export const metadata: Metadata = { title: "Barbeiros | Fluxo Barber" }; // título específico desta página do painel
 
 export default async function PaginaBarbeiros() {
   const { supabase, barbeariaId } = await obterBarbeariaAtual(); // garante login e descobre em qual barbearia buscar

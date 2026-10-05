@@ -39,3 +39,10 @@ body {
   color: var(--color-texto); /* texto claro por padrão, para contrastar com o fundo escuro */
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif; /* Inter como fonte padrão do corpo */
 }
+
+/* acessibilidade: todo elemento que recebe foco pelo teclado (Tab) ganha um contorno dourado bem visível;
+   ":focus-visible" (em vez de ":focus") evita mostrar esse contorno num clique de mouse, só no teclado */
+:focus-visible {
+  outline: 2px solid var(--color-dourado);
+  outline-offset: 2px;
+}

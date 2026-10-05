@@ -12,9 +12,21 @@ const inter = Inter({ // fonte usada no texto corrido: moderna e com boa legibil
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = { // informações que aparecem na aba do navegador e em buscadores
-  title: "Fluxo Barber", // título padrão do site
-  description: "Agendamento online para barbearias: agenda, equipe e serviços em um só lugar.", // descrição curta do produto
+const DESCRICAO_PADRAO = "Agendamento online para barbearias: agenda, equipe e serviços em um só lugar."; // reaproveitada no OG abaixo, pra não repetir o texto em dois lugares
+
+export const metadata: Metadata = { // informações que aparecem na aba do navegador, em buscadores, e ao compartilhar o link
+  // "VERCEL_URL" é preenchida automaticamente pela Vercel em cada deploy; sem ela (ex: rodando local), cai no localhost.
+  // Isso é necessário pra transformar a imagem de compartilhamento (app/opengraph-image.tsx) num link completo (https://...)
+  metadataBase: new URL(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
+  title: "Fluxo Barber", // título padrão; páginas internas sobrescrevem com o próprio (ex: "Termos de Uso | Fluxo Barber")
+  description: DESCRICAO_PADRAO, // descrição curta do produto, usada quando a página não define a própria
+  openGraph: { // como o link aparece quando compartilhado (ex: WhatsApp, Telegram, redes sociais)
+    title: "Fluxo Barber",
+    description: DESCRICAO_PADRAO,
+    siteName: "Fluxo Barber",
+    locale: "pt_BR", // avisa que o conteúdo é em português do Brasil
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) { // envolve todas as páginas do site

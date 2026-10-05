@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation"; // usado nas defesas extras abaixo
+import { type Metadata } from "next"; // tipo da metadata desta página
 import { createClient } from "@/utils/supabase/server"; // cliente Supabase do lado servidor
 import { FormularioConfiguracoes } from "./FormularioConfiguracoes"; // formulário (Client Component) desta página
+
+export const metadata: Metadata = { title: "Configurações | Fluxo Barber" }; // título específico desta página do painel
 
 export default async function PaginaConfiguracoes() {
   const supabase = await createClient(); // conexão com o Supabase usando os cookies desta visita

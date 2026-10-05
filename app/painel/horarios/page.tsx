@@ -1,8 +1,11 @@
 import Link from "next/link"; // navegação entre barbeiros (via querystring), sem perder a página
+import { type Metadata } from "next"; // tipo da metadata desta página
 import { obterBarbeariaAtual } from "@/utils/supabase/barbearia-atual"; // descobre a barbearia do usuário logado
 import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
 import { FormularioIntervalo } from "./FormularioIntervalo"; // mini-formulário de adicionar intervalo (um por dia)
 import { removerIntervalo } from "./actions"; // Server Action usada no botão "Remover"
+
+export const metadata: Metadata = { title: "Horários | Fluxo Barber" }; // título específico desta página do painel
 
 const DIAS_SEMANA = [ // nomes dos dias na mesma ordem do "dia_semana" do banco (0 = domingo)
   "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado",

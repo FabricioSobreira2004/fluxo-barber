@@ -1,4 +1,5 @@
 import Link from "next/link"; // navegação entre dias e barbeiros, via querystring
+import { type Metadata } from "next"; // tipo da metadata desta página
 import { ChevronLeft, ChevronRight } from "lucide-react"; // setas de navegação entre dias
 import { obterBarbeariaAtual } from "@/utils/supabase/barbearia-atual"; // descobre a barbearia do usuário logado
 import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
@@ -6,6 +7,8 @@ import { hojeISO, somarDias, limitesDoDia, formatarDataLonga } from "@/utils/dat
 import { FormularioNovoAgendamento } from "./FormularioNovoAgendamento"; // formulário (Client Component) de criação
 import { CardAgendamento } from "./CardAgendamento"; // card visual de cada agendamento da lista
 import { type AgendamentoComRelacionamentos } from "./tipos"; // formato da linha vinda do banco, com os relacionamentos
+
+export const metadata: Metadata = { title: "Agenda | Fluxo Barber" }; // título específico desta página do painel
 
 export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
   const { supabase, barbeariaId } = await obterBarbeariaAtual(); // garante login e descobre em qual barbearia buscar

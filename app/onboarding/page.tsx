@@ -1,7 +1,13 @@
 import { redirect } from "next/navigation"; // usado pra pular o onboarding de quem já tem barbearia
+import { type Metadata } from "next"; // tipo da metadata desta página
 import { createClient } from "@/utils/supabase/server"; // cliente Supabase do lado servidor
 import { AuthCard } from "@/components/AuthCard"; // layout compartilhado das telas de autenticação/onboarding
 import { FormularioOnboarding } from "./FormularioOnboarding"; // formulário (Client Component) de criar barbearia
+
+export const metadata: Metadata = { // título/descrição específicos desta página
+  title: "Criar barbearia | Fluxo Barber",
+  description: "Cadastre sua barbearia no Fluxo Barber e comece a usar a agenda online.",
+};
 
 export default async function PaginaOnboarding() {
   const supabase = await createClient(); // conexão com o Supabase usando os cookies desta visita

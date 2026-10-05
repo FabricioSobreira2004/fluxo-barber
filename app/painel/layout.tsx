@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation"; // usado pra tirar da área do painel quem não está logado ou não tem barbearia
+import { type Metadata } from "next"; // tipo da metadata deste layout
 import { createClient } from "@/utils/supabase/server"; // cliente Supabase do lado servidor
 import { PainelShell } from "@/components/painel/PainelShell"; // menu lateral/inferior + cabeçalho
 import { BotaoSair } from "@/components/BotaoSair"; // botão de logout (Server Component, por isso vem como prop)
+
+export const metadata: Metadata = { // aplicado a toda página dentro de /painel, a não ser que ela sobrescreva algum campo
+  robots: { index: false, follow: false }, // área privada: não faz sentido um buscador indexar essas páginas
+};
 
 export default async function PainelLayout({ children }: LayoutProps<"/painel">) { // envolve todas as páginas dentro de /painel
   const supabase = await createClient(); // conexão com o Supabase usando os cookies desta visita

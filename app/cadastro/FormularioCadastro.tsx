@@ -47,8 +47,8 @@ export function FormularioCadastro() {
           name="aceiteTermos"
           type="checkbox"
           required
-          // mesma cor dourada dos outros controles, e foco visível (acessibilidade) igual ao resto do formulário
-          className="mt-1 h-4 w-4 shrink-0 rounded border-borda bg-superficie text-dourado accent-dourado focus:outline-2 focus:outline-offset-2 focus:outline-dourado"
+          // "accent-dourado" pinta a caixa marcada na cor da identidade visual; o foco dourado já vem do globals.css
+          className="mt-1 h-4 w-4 shrink-0 rounded border-borda bg-superficie accent-dourado"
         />
         <Label htmlFor="aceiteTermos" className="mb-0 text-xs leading-snug">
           Li e aceito os{" "}
