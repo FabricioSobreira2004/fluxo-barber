@@ -6,6 +6,7 @@ import { useGSAP } from "@gsap/react"; // hook oficial do GSAP pra React: já li
 import gsap from "gsap"; // motor de animação
 import { Button } from "@/components/ui/Button"; // botão estilizado, usado nas ações do balão
 import { marcarTourVisto } from "./acoes-progresso"; // Server Action: grava que o usuário já viu o tour
+import { type StatusProntidao } from "@/utils/supabase/prontidao"; // formato do status (pronta + o que falta), calculado no servidor
 
 // cada passo aponta pro atributo "data-tour" de um elemento (colocado no menu lateral/inferior do
 // PainelShell e nos cards da própria Agenda) — "seletor: null" é o passo de boas-vindas, sem alvo
@@ -16,7 +17,7 @@ interface PassoTour {
   enfase?: boolean; // true só no passo do link: o passo mais importante do tour, com um anel mais forte
 }
 
-function montarPassos(nomeBarbearia: string): PassoTour[] {
+function montarPassos(nomeBarbearia: string, statusLink: StatusProntidao): PassoTour[] {
   return [
     {
       seletor: null,
@@ -41,7 +42,12 @@ function montarPassos(nomeBarbearia: string): PassoTour[] {
     {
       seletor: '[data-tour="link-barbearia"]',
       titulo: "O link da sua barbearia",
-      texto: "Este é o link da sua barbearia! Mande para seus clientes pelo WhatsApp ou coloque na bio do Instagram. Eles escolhem o barbeiro, o serviço e o horário sozinhos.",
+      // o aviso só aparece se a barbearia AINDA NÃO tiver os 3 requisitos (barbeiro, serviço,
+      // horário) — o mesmo "statusLink" usado no card "Seu link" e no aviso de compartilhar cedo
+      // demais, sempre a mesma fonte de verdade (barbeariaProntaParaAgendamentos)
+      texto: statusLink.pronta
+        ? "Este é o link da sua barbearia! Mande para seus clientes pelo WhatsApp ou coloque na bio do Instagram. Eles escolhem o barbeiro, o serviço e o horário sozinhos."
+        : "Este é o link da sua barbearia! Atenção: o link só funciona depois de cadastrar barbeiro, serviço e horários.",
       enfase: true,
     },
     {
@@ -104,9 +110,10 @@ function calcularPosicaoBalao(alvo: Retangulo, larguraBalao: number, alturaBalao
 interface PropriedadesTour { // o que a página da Agenda passa pra esse componente
   exibirAutomaticamente: boolean; // true só quando o usuário logado ainda não viu o tour (lido do user_metadata, no servidor)
   nomeBarbearia: string; // usado na frase de boas-vindas
+  statusLink: StatusProntidao; // se o link já funciona (barbeiro + serviço + horário) — muda o texto do passo 5
 }
 
-export function Tour({ exibirAutomaticamente, nomeBarbearia }: PropriedadesTour) {
+export function Tour({ exibirAutomaticamente, nomeBarbearia, statusLink }: PropriedadesTour) {
   const [aberto, setAberto] = useState(exibirAutomaticamente); // controla se o tour aparece na tela
   const [passo, setPasso] = useState(0); // índice do passo atual (0 a 5)
   const [celebrando, setCelebrando] = useState(false); // tela final, depois do botão "Concluir" no último passo
@@ -115,7 +122,7 @@ export function Tour({ exibirAutomaticamente, nomeBarbearia }: PropriedadesTour)
 
   const balaoRef = useRef<HTMLDivElement>(null); // referência ao balão: usada pro foco (acessibilidade) e pra medir seu próprio tamanho
   const ultimoPassoAnimadoRef = useRef(-1); // guarda qual passo já recebeu a animação de entrada (fade + deslize), pra não repetir a cada recálculo de scroll
-  const passos = montarPassos(nomeBarbearia); // lista de passos; recalculada a cada render, mas é bem barata (só monta 6 objetos) e "nomeBarbearia" não muda durante o tour
+  const passos = montarPassos(nomeBarbearia, statusLink); // lista de passos; recalculada a cada render, mas é bem barata (só monta 6 objetos)
 
   // fecha o tour: marca como visto no servidor e esconde a interface
   function encerrar() {

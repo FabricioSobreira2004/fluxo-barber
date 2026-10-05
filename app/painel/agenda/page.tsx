@@ -12,6 +12,7 @@ import { type AgendamentoComRelacionamentos } from "./tipos"; // formato da linh
 import { LinkBarbearia } from "@/components/painel/LinkBarbearia"; // card "Seu link", com copiar/WhatsApp/abrir
 import { ChecklistPrimeirosPassos, type ItemChecklist } from "@/components/painel/ChecklistPrimeirosPassos"; // card de progresso dos primeiros passos
 import { Tour } from "@/components/painel/Tour"; // tutorial guiado (só aparece automaticamente no 1º acesso)
+import { barbeariaProntaParaAgendamentos } from "@/utils/supabase/prontidao"; // função única que decide se o link já funciona (barbeiro + serviço + horário)
 
 export const metadata: Metadata = { title: "Agenda | Fluxo Barber" }; // título específico desta página do painel
 
@@ -63,19 +64,10 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
 
   // tudo que é só pro card "Seu link", pro checklist e pro tour guiado — buscado em paralelo com o
   // que a agenda já buscava, pra não somar um monte de "ida e volta" ao banco em sequência
-  const [
-    { data: barbearia },
-    origemSite,
-    { count: totalBarbeiros },
-    { count: totalServicos },
-    { count: totalHorarios },
-    { count: totalAgendamentosHistorico },
-  ] = await Promise.all([
+  const [{ data: barbearia }, origemSite, status, { count: totalAgendamentosHistorico }] = await Promise.all([
     supabase.from("barbearias").select("nome, slug").eq("id", barbeariaId).single(),
     obterOrigemSite(),
-    supabase.from("barbeiros").select("id", { count: "exact", head: true }).eq("barbearia_id", barbeariaId), // TODOS os barbeiros (não só os ativos): o checklist é sobre ter cadastrado, não sobre estar ativo agora
-    supabase.from("servicos").select("id", { count: "exact", head: true }).eq("barbearia_id", barbeariaId),
-    supabase.from("horarios_trabalho").select("id", { count: "exact", head: true }).eq("barbearia_id", barbeariaId),
+    barbeariaProntaParaAgendamentos(supabase, barbeariaId), // os 3 requisitos do link (barbeiro/serviço/horário ativos), numa função só
     supabase.from("agendamentos").select("id", { count: "exact", head: true }).eq("barbearia_id", barbeariaId), // em QUALQUER dia, não só no dia selecionado na tela
   ]);
 
@@ -89,29 +81,38 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
   const sufixoBarbeiro = barbeiroFiltroId ? `&barbeiro=${barbeiroFiltroId}` : ""; // preserva o filtro ao trocar de dia
 
   const linkJaCompartilhado = Boolean(user.user_metadata?.link_compartilhado); // true depois que o usuário clicou em Copiar ou WhatsApp pelo menos uma vez
-  const itensChecklist: ItemChecklist[] = [ // cada item é calculado a partir dos dados reais, nunca marcado "na mão"
-    { chave: "barbeiro", rotulo: "Cadastrar pelo menos 1 barbeiro", feito: (totalBarbeiros ?? 0) > 0, href: "/painel/barbeiros" },
-    { chave: "servico", rotulo: "Cadastrar pelo menos 1 serviço", feito: (totalServicos ?? 0) > 0, href: "/painel/servicos" },
-    { chave: "horario", rotulo: "Definir os horários de trabalho", feito: (totalHorarios ?? 0) > 0, href: "/painel/horarios" },
+  // grupo 1: os 3 requisitos pro link funcionar — "feito" vem DIRETO do "status" (a mesma função
+  // central usada no card "Seu link"), nunca recalculado separado, pra nunca desalinhar os dois
+  const itensObrigatorios: ItemChecklist[] = [
+    { chave: "barbeiro", rotulo: "Cadastrar pelo menos 1 barbeiro", feito: status.temBarbeiroAtivo, href: "/painel/barbeiros" },
+    { chave: "servico", rotulo: "Cadastrar pelo menos 1 serviço", feito: status.temServicoAtivo, href: "/painel/servicos" },
+    { chave: "horario", rotulo: "Definir os horários de trabalho", feito: status.temHorarioParaBarbeiroAtivo, href: "/painel/horarios" },
+  ];
+  // grupo 2: passos seguintes, que NÃO bloqueiam o link — só ajudam a tirar o maior proveito dele
+  const itensProximos: ItemChecklist[] = [
     { chave: "link", rotulo: "Copiar ou compartilhar seu link", feito: linkJaCompartilhado, href: "#link-barbearia" },
-    { chave: "agendamento", rotulo: "Receber o primeiro agendamento", feito: (totalAgendamentosHistorico ?? 0) > 0 },
+    { chave: "agendamento", rotulo: "Receber o primeiro agendamento", feito: (totalAgendamentosHistorico ?? 0) > 0 }, // sem "href": não é algo que se resolve com um clique
   ];
 
   return (
     <div className="flex flex-col gap-6">
       {/* o tour só aparece de verdade quando "tour_visto" ainda não está marcado no usuário —
           essa é a ÚNICA tela do painel que o monta, porque é a 1ª que aparece depois do onboarding */}
-      <Tour exibirAutomaticamente={!user.user_metadata?.tour_visto} nomeBarbearia={barbearia?.nome ?? ""} />
+      <Tour exibirAutomaticamente={!user.user_metadata?.tour_visto} nomeBarbearia={barbearia?.nome ?? ""} statusLink={status} />
 
       <h1 className="font-display text-2xl font-semibold text-texto">Agenda</h1>
 
       {barbearia && ( // defesa simples: sem barbearia (não deveria acontecer aqui), não tem link pra montar
         <div id="link-barbearia">
-          <LinkBarbearia slug={barbearia.slug} nomeBarbearia={barbearia.nome} origemSite={origemSite} />
+          <LinkBarbearia slug={barbearia.slug} nomeBarbearia={barbearia.nome} origemSite={origemSite} status={status} />
         </div>
       )}
 
-      <ChecklistPrimeirosPassos itens={itensChecklist} escondidoInicialmente={Boolean(user.user_metadata?.checklist_escondido)} />
+      <ChecklistPrimeirosPassos
+        itensObrigatorios={itensObrigatorios}
+        itensProximos={itensProximos}
+        escondidoInicialmente={Boolean(user.user_metadata?.checklist_escondido)}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3"> {/* navegação de dia + filtro de barbeiro */}
         <div className="flex items-center gap-2">
