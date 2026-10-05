@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/Button"; // botão estilizado
 import { FormMessage } from "@/components/ui/FormMessage"; // caixa de mensagem de erro
 import { centavosParaReais } from "@/utils/dinheiro"; // formata o preço (centavos) pra exibição
 import { hojeISO } from "@/utils/data"; // data de hoje, no fuso do Brasil
+import { aplicarMascaraTelefone } from "@/utils/telefone"; // formata o telefone enquanto o cliente digita
+import { validarNomeCliente, validarTelefoneCliente } from "@/utils/validacao"; // mesmas regras de validação usadas no banco (migration 003)
 import { buscarHorariosLivres, criarAgendamentoPublico } from "./actions"; // funções do servidor chamadas direto (sem formulário tradicional)
 
 interface Barbeiro { id: string; nome: string } // só os campos usados aqui
@@ -50,8 +52,15 @@ export function FormularioAgendamentoPublico({ barbeariaId, barbeiros, servicos 
       setErro("Escolha um horário.");
       return;
     }
-    if (!nome.trim() || !telefone.trim()) {
-      setErro("Preencha seu nome e telefone.");
+
+    const erroNome = validarNomeCliente(nome); // mesma regra usada no banco (migration 003): entre 2 e 100 caracteres
+    if (erroNome) {
+      setErro(erroNome);
+      return;
+    }
+    const erroTelefone = validarTelefoneCliente(telefone); // mesma regra usada no banco: 10 ou 11 dígitos
+    if (erroTelefone) {
+      setErro(erroTelefone);
       return;
     }
 
@@ -147,7 +156,14 @@ export function FormularioAgendamentoPublico({ barbeariaId, barbeiros, servicos 
 
       <div>
         <Label htmlFor="telefone">Seu telefone</Label>
-        <Input id="telefone" value={telefone} onChange={(evento) => setTelefone(evento.target.value)} placeholder="(11) 99999-9999" required />
+        <Input
+          id="telefone"
+          value={telefone}
+          onChange={(evento) => setTelefone(aplicarMascaraTelefone(evento.target.value))} // reformata a cada tecla digitada
+          placeholder="(11) 99999-9999"
+          inputMode="numeric" // teclado numérico no celular, já que só números fazem sentido aqui
+          required
+        />
       </div>
 
       <FormMessage tipo="erro">{erro}</FormMessage>

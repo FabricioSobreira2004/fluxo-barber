@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache"; // avisa o Next.js que a agenda pre
 import { obterBarbeariaAtual } from "@/utils/supabase/barbearia-atual"; // descobre a barbearia do usuário logado
 import { paraTimestampBrasil, diaDaSemana } from "@/utils/data"; // monta o timestamp de início e descobre o dia da semana, a partir de data + hora digitadas
 import { type StatusAgendamento } from "@/utils/status-agendamento"; // os status possíveis de um agendamento
+import { normalizarTelefone } from "@/utils/telefone"; // guarda o telefone só com dígitos, igual ao banco (migration 003)
+import { validarNomeCliente, validarTelefoneCliente } from "@/utils/validacao"; // mesmas regras de validação usadas no banco
 
 export interface EstadoAgenda { // formato do "estado" que o useActionState guarda e mostra na tela
   erro?: string; // mensagem de erro, se a última tentativa falhou
@@ -15,11 +17,16 @@ export async function criarAgendamento(_estadoAnterior: EstadoAgenda, formData: 
   const data = String(formData.get("data") ?? ""); // data do atendimento, "AAAA-MM-DD"
   const hora = String(formData.get("hora") ?? ""); // hora do atendimento, "HH:MM"
   const nomeCliente = String(formData.get("nomeCliente") ?? "").trim(); // nome do cliente (só usado se for um cliente novo)
-  const telefoneCliente = String(formData.get("telefoneCliente") ?? "").trim(); // telefone do cliente (identifica se já existe)
+  const telefoneCliente = normalizarTelefone(String(formData.get("telefoneCliente") ?? "")); // só dígitos, igual ao padrão do banco (migration 003)
   const observacao = String(formData.get("observacao") ?? "").trim(); // anotação livre, opcional
 
   if (!barbeiroId || !servicoId || !data || !hora || !telefoneCliente) { // validações simples antes de gastar chamadas de rede
     return { erro: "Preencha barbeiro, serviço, data, hora e telefone do cliente." };
+  }
+
+  const erroTelefone = validarTelefoneCliente(telefoneCliente); // mesma regra da constraint "clientes_telefone_formato" do banco
+  if (erroTelefone) {
+    return { erro: erroTelefone };
   }
 
   const { supabase, barbeariaId } = await obterBarbeariaAtual(); // garante login e descobre em qual barbearia cadastrar
@@ -46,6 +53,10 @@ export async function criarAgendamento(_estadoAnterior: EstadoAgenda, formData: 
   if (!clienteId) { // telefone novo: precisa cadastrar o cliente agora
     if (!nomeCliente) {
       return { erro: "Esse telefone ainda não tem cadastro. Informe o nome do cliente." };
+    }
+    const erroNome = validarNomeCliente(nomeCliente); // mesma regra usada no banco (migration 003)
+    if (erroNome) {
+      return { erro: erroNome };
     }
 
     const { data: novoCliente, error: erroCliente } = await supabase

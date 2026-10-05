@@ -1,12 +1,14 @@
 "use client"; // precisa de useState/useEffect/useActionState (só existem no navegador), por isso vira Client Component
 
-import { useActionState, useEffect, useState } from "react"; // hooks de estado/efeito e o hook que liga o form à Server Action
+import { useActionState, useEffect, useState, type FormEvent } from "react"; // hooks de estado/efeito e o hook que liga o form à Server Action
 import { Label } from "@/components/ui/Label"; // legenda dos campos
 import { Input } from "@/components/ui/Input"; // campo de texto estilizado
 import { Select } from "@/components/ui/Select"; // menu de opções estilizado
 import { Button } from "@/components/ui/Button"; // botão estilizado
 import { FormMessage } from "@/components/ui/FormMessage"; // caixa de mensagem de erro
 import { criarAgendamento, verificarExpediente, type EstadoAgenda } from "./actions"; // Server Actions usadas por este formulário
+import { aplicarMascaraTelefone, formatarTelefone, normalizarTelefone } from "@/utils/telefone"; // formata/normaliza o telefone, igual à página pública
+import { validarNomeCliente, validarTelefoneCliente } from "@/utils/validacao"; // mesmas regras de validação usadas no banco (migration 003)
 
 const ESTADO_INICIAL: EstadoAgenda = {}; // nenhum erro antes do primeiro envio
 
@@ -37,6 +39,8 @@ export function FormularioNovoAgendamento({
   const [data, setData] = useState(dataSelecionada);
   const [hora, setHora] = useState("");
   const [foraDoExpediente, setForaDoExpediente] = useState(false); // true quando o horário não cai em nenhum intervalo cadastrado
+  const [telefoneCliente, setTelefoneCliente] = useState(""); // controlado pra aplicar a máscara "(DD) XXXXX-XXXX" enquanto digita
+  const [erroValidacao, setErroValidacao] = useState(""); // erro encontrado ANTES de enviar (mesmas regras do banco), pra não gastar uma chamada de rede
 
   useEffect(() => { // toda vez que barbeiro, data ou hora mudam, confere de novo o expediente
     let cancelado = false; // evita atualizar o estado se um novo efeito já começou antes deste terminar (digitação rápida)
@@ -58,8 +62,29 @@ export function FormularioNovoAgendamento({
     };
   }, [barbeiroId, data, hora]);
 
+  function aoSubmeter(evento: FormEvent<HTMLFormElement>) { // roda antes da Server Action, com as mesmas regras de validação do banco
+    setErroValidacao("");
+
+    const erroTelefone = validarTelefoneCliente(telefoneCliente);
+    if (erroTelefone) {
+      evento.preventDefault(); // trava o envio: não vale a pena chamar o servidor com um telefone que o banco vai recusar
+      setErroValidacao(erroTelefone);
+      return;
+    }
+
+    const telefoneJaCadastrado = clientes.some((cliente) => cliente.telefone === normalizarTelefone(telefoneCliente));
+    if (!telefoneJaCadastrado) { // telefone novo: precisa de um nome válido (cliente existente já tem nome cadastrado)
+      const nomeDigitado = new FormData(evento.currentTarget).get("nomeCliente");
+      const erroNome = validarNomeCliente(String(nomeDigitado ?? ""));
+      if (erroNome) {
+        evento.preventDefault();
+        setErroValidacao(erroNome);
+      }
+    }
+  }
+
   return (
-    <form action={acao} className="flex flex-col gap-4"> {/* ao enviar, o React chama a Server Action automaticamente */}
+    <form action={acao} onSubmit={aoSubmeter} className="flex flex-col gap-4"> {/* ao enviar, valida e então o React chama a Server Action */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="telefoneCliente">Telefone do cliente</Label>
@@ -67,12 +92,16 @@ export function FormularioNovoAgendamento({
             id="telefoneCliente"
             name="telefoneCliente"
             placeholder="(11) 99999-9999"
+            value={telefoneCliente}
+            onChange={(evento) => setTelefoneCliente(aplicarMascaraTelefone(evento.target.value))} // reformata a cada tecla digitada
             list="clientes-existentes" // liga esse campo à lista de sugestões abaixo
+            inputMode="numeric" // teclado numérico no celular, já que só números fazem sentido aqui
             required
           />
           <datalist id="clientes-existentes"> {/* sugestão nativa do navegador: digitando o telefone, aparece o nome de quem já é cliente */}
             {clientes.map((cliente) => (
-              <option key={cliente.telefone} value={cliente.telefone}>
+              // valor formatado igual ao que aparece no campo, senão o navegador não casa a sugestão com o texto já digitado
+              <option key={cliente.telefone} value={formatarTelefone(cliente.telefone)}>
                 {cliente.nome}
               </option>
             ))}
@@ -126,7 +155,7 @@ export function FormularioNovoAgendamento({
         <Input id="observacao" name="observacao" placeholder="Ex: pediu pra não cortar muito" />
       </div>
 
-      <FormMessage tipo="erro">{estado.erro}</FormMessage> {/* só aparece quando "estado.erro" tem algum texto */}
+      <FormMessage tipo="erro">{erroValidacao || estado.erro}</FormMessage> {/* validação local tem prioridade; senão mostra o erro do servidor */}
 
       <Button type="submit" disabled={pendente} className="w-full sm:w-auto"> {/* desabilita o botão enquanto a Server Action está rodando */}
         {pendente ? "Agendando..." : "Criar agendamento"}

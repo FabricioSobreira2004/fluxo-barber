@@ -141,7 +141,7 @@ begin
     select 1 from barbeiros
     where id = p_barbeiro_id and barbearia_id = p_barbearia_id and ativo = true
   ) then
-    raise exception 'Barbeiro invalido';
+    raise exception 'Barbeiro inválido';
   end if;
 
   select duracao_min, preco_centavos into v_duracao_min, v_preco_centavos -- já aproveita pra pegar duração e preço
@@ -149,7 +149,7 @@ begin
   where id = p_servico_id and barbearia_id = p_barbearia_id and ativo = true;
 
   if v_duracao_min is null then
-    raise exception 'Servico invalido';
+    raise exception 'Serviço inválido';
   end if;
 
   -- c) CORREÇÃO DA VIRADA DA MEIA-NOITE: a versão antiga comparava só
@@ -167,14 +167,14 @@ begin
       and p_hora >= ht.inicio
       and (p_data + p_hora + make_interval(mins => v_duracao_min)) <= (p_data + ht.fim)
   ) then
-    raise exception 'Horario fora do expediente do barbeiro';
+    raise exception 'Horário fora do expediente do barbeiro';
   end if;
 
   v_inicio := (p_data + p_hora) at time zone 'America/Sao_Paulo';
   v_fim := v_inicio + make_interval(mins => v_duracao_min);
 
   if v_inicio <= now() then -- não deixa agendar um horário que já passou
-    raise exception 'Nao e possivel agendar no passado';
+    raise exception 'Não é possível agendar no passado';
   end if;
 
   select id into v_cliente_id -- tenta reaproveitar um cliente já cadastrado com esse telefone (já normalizado)

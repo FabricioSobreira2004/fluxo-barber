@@ -45,6 +45,9 @@ export async function criarAgendamentoPublico(dados: DadosNovoAgendamentoPublico
     if (error.code === "23P01") { // violação da trava "sem_conflito_de_horario": alguém agendou esse horário um instante antes
       return { erro: "Esse horário acabou de ser ocupado por outra pessoa. Escolha outro horário." };
     }
+    if (error.code === "P0001") { // "raise exception" dentro da função (migration 003): nome/telefone inválido, limite de spam, etc. -- a mensagem já vem em português, pronta pra mostrar
+      return { erro: error.message };
+    }
     return { erro: "Não foi possível criar o agendamento. Tente novamente." };
   }
 
