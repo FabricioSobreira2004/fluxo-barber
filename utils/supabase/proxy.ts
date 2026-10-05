@@ -1,10 +1,11 @@
 import { createServerClient } from "@supabase/ssr"; // cria a conexão com o Supabase usando os cookies da requisição, igual ao server.ts
 import { NextResponse, type NextRequest } from "next/server"; // tipos e classe usados para ler a requisição e montar a resposta do proxy
+import { type Database } from "@/utils/supabase/database.types"; // tipos gerados do banco, pra manter o mesmo cliente tipado em todo lugar
 
 export async function updateSession(request: NextRequest) { // função chamada pelo proxy.ts em toda requisição, para manter o login vivo
   let supabaseResponse = NextResponse.next({ request }); // resposta "padrão": deixa a requisição seguir sem travar nada
 
-  const supabase = createServerClient(                  // conexão com o Supabase feita só para ler/renovar a sessão
+  const supabase = createServerClient<Database>(       // conexão com o Supabase feita só para ler/renovar a sessão
     process.env.NEXT_PUBLIC_SUPABASE_URL!,               // endereço do projeto, lido do .env.local
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,   // chave pública, também do .env.local
     {

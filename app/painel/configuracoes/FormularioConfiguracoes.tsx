@@ -8,14 +8,9 @@ import { Button } from "@/components/ui/Button"; // botão estilizado
 import { FormMessage } from "@/components/ui/FormMessage"; // caixa de mensagem de erro/sucesso
 import { Card } from "@/components/ui/Card"; // bloco de superfície que envolve o formulário
 import { atualizarBarbearia, type EstadoConfiguracoes } from "./actions"; // Server Action e o formato do estado dela
+import { type Tabelas } from "@/utils/supabase/database.types"; // tipos gerados do banco (ver PENDENCIAS.md)
 
-interface Barbearia { // só os campos que este formulário usa
-  id: string;
-  nome: string;
-  slug: string;
-  telefone: string | null;
-  endereco: string | null;
-}
+type Barbearia = Pick<Tabelas<"barbearias">, "id" | "nome" | "slug" | "telefone" | "endereco">; // só os campos que este formulário usa
 
 const ESTADO_INICIAL: EstadoConfiguracoes = {}; // nenhuma mensagem antes do primeiro envio
 

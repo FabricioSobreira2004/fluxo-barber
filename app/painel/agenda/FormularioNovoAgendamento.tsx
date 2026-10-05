@@ -9,12 +9,13 @@ import { FormMessage } from "@/components/ui/FormMessage"; // caixa de mensagem 
 import { criarAgendamento, verificarExpediente, type EstadoAgenda } from "./actions"; // Server Actions usadas por este formulário
 import { aplicarMascaraTelefone, formatarTelefone, normalizarTelefone } from "@/utils/telefone"; // formata/normaliza o telefone, igual à página pública
 import { validarNomeCliente, validarTelefoneCliente } from "@/utils/validacao"; // mesmas regras de validação usadas no banco (migration 003)
+import { type Tabelas } from "@/utils/supabase/database.types"; // tipos gerados do banco (ver PENDENCIAS.md)
 
 const ESTADO_INICIAL: EstadoAgenda = {}; // nenhum erro antes do primeiro envio
 
-interface Barbeiro { id: string; nome: string } // só os campos que este formulário usa
-interface Servico { id: string; nome: string } // idem
-interface Cliente { nome: string; telefone: string } // usado só pra sugerir no campo de telefone
+type Barbeiro = Pick<Tabelas<"barbeiros">, "id" | "nome">; // só os campos que este formulário usa, direto do tipo gerado da tabela
+type Servico = Pick<Tabelas<"servicos">, "id" | "nome">; // idem
+type Cliente = Pick<Tabelas<"clientes">, "nome" | "telefone">; // usado só pra sugerir no campo de telefone
 
 interface PropriedadesFormularioNovoAgendamento {
   barbeiros: Barbeiro[];

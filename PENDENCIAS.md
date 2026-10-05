@@ -47,6 +47,34 @@ erro "over_email_send_rate_limit" só de testar o cadastro 2 vezes seguidas).
      clientes de verdade**, senão qualquer pessoa cadastra uma conta com
      email de outra pessoa sem precisar confirmar nada.
 
+## Nova rodada — Gerar os tipos do banco pela CLI do Supabase (opcional)
+
+**O que é:** o site agora usa tipos TypeScript do banco (`utils/supabase/database.types.ts`)
+nos dois clientes do Supabase (`utils/supabase/server.ts` e `client.ts`) — isso faz
+`.from("tabela").select(...)` e `.rpc(...)` virem com autocomplete e checagem de tipo.
+
+**Por que escrevi esse arquivo na mão:** o comando oficial (`supabase gen types
+typescript`) precisa de login na CLI (`supabase login`), que abre o navegador —
+e eu não tenho como fazer isso por você. Então escrevi `database.types.ts` no
+mesmo formato que a CLI geraria, a partir do schema das migrations 001 a 003.
+Ele já funciona normalmente; rodar a CLI é opcional, só pra ter 100% de certeza
+de que bate com o banco real (ex: se você alterar uma coluna direto no painel
+sem criar uma migration nova).
+
+**Se quiser gerar pela CLI de verdade:**
+1. No terminal, dentro da pasta do projeto, rode `npx supabase login` — ele abre
+   o navegador pra você autorizar o acesso.
+2. Depois, rode:
+   ```
+   npx supabase gen types typescript --project-id bvspfjhcooygqfsgirnu > utils/supabase/database.types.ts
+   ```
+   (o `--project-id` já é o do seu projeto, lido do `.env.local`.)
+3. Esse comando SUBSTITUI o arquivo inteiro — tudo bem, porque os "atalhos"
+   (`Tabelas`, `NovaLinha`, etc.) que escrevi no final do arquivo não existem
+   no banco, então você precisaria colar essas ~15 linhas de volta no fim do
+   arquivo depois de gerar (procure a seção "Atalhos" neste mesmo arquivo pra
+   copiar antes de substituir, ou me avise depois que eu colo de novo).
+
 ## ⚠️ Nova rodada — Rodar a migration 003 (PRIORIDADE)
 
 **O que é:** `supabase/migrations/003_padronizacao_e_correcoes.sql` padroniza

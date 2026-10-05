@@ -1,14 +1,14 @@
-export interface AgendamentoComRelacionamentos { // formato real de cada linha devolvida pela consulta com relacionamentos (ver page.tsx)
-  id: string;
-  inicio: string;
-  fim: string;
-  preco_centavos: number;
-  status: string;
-  observacao: string | null;
-  // o Postgres liga agendamentos -> barbeiros/clientes/servicos por uma chave estrangeira "pra um só" registro
-  // (ex: um agendamento tem UM barbeiro), então o Supabase devolve cada um como OBJETO único, não como lista;
-  // sem os tipos gerados do banco (não fizemos esse passo), o TypeScript não sabe disso e por isso declaramos aqui na mão
-  barbeiro: { nome: string } | null;
-  cliente: { nome: string; telefone: string } | null;
-  servico: { nome: string } | null;
-}
+import { type Tabelas } from "@/utils/supabase/database.types"; // tipos gerados do banco (ver PENDENCIAS.md)
+
+// formato real de cada linha devolvida pela consulta com relacionamentos (ver page.tsx). Os campos "soltos" vêm
+// de Tabelas<"agendamentos">; os 3 relacionamentos abaixo são declarados na mão porque o Postgres liga
+// agendamentos -> barbeiros/clientes/servicos "pra um só" registro (ex: um agendamento tem UM barbeiro), e o
+// select usa um alias (ex: "barbeiro:barbeiros(nome)") que o TypeScript não consegue inferir sozinho
+export type AgendamentoComRelacionamentos = Pick<
+  Tabelas<"agendamentos">, // reaproveita os tipos das colunas direto do banco, em vez de redigitar cada um
+  "id" | "inicio" | "fim" | "preco_centavos" | "status" | "observacao"
+> & {
+  barbeiro: Pick<Tabelas<"barbeiros">, "nome"> | null; // "null" cobre o caso (raro) de o barbeiro ter sido apagado
+  cliente: Pick<Tabelas<"clientes">, "nome" | "telefone"> | null;
+  servico: Pick<Tabelas<"servicos">, "nome"> | null;
+};

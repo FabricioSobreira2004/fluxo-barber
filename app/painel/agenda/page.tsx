@@ -54,8 +54,9 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
   }
 
   const { data: agendamentosBrutos } = await consultaAgendamentos;
-  // reafirma pro TypeScript o formato real (objeto único em cada relacionamento, não lista) — ver comentário na interface acima
-  const agendamentos = (agendamentosBrutos ?? []) as unknown as AgendamentoComRelacionamentos[];
+  // com os tipos gerados do banco (Database em utils/supabase/database.types.ts), o Supabase já sabe, pelas
+  // chaves estrangeiras, que cada relacionamento aqui é um objeto único — não precisa mais de "as unknown as"
+  const agendamentos: AgendamentoComRelacionamentos[] = agendamentosBrutos ?? [];
 
   const diaAnterior = somarDias(dataSelecionada, -1); // pra onde a seta "<" deve levar
   const diaSeguinte = somarDias(dataSelecionada, 1); // pra onde a seta ">" deve levar

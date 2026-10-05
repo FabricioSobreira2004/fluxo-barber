@@ -1,10 +1,11 @@
 import { createServerClient } from "@supabase/ssr";  // função da biblioteca que cria a conexão com o Supabase rodando no servidor
 import { cookies } from "next/headers";              // função do Next.js que lê e grava os cookies do navegador de quem acessou
+import { type Database } from "@/utils/supabase/database.types"; // tipos gerados do banco (ver PENDENCIAS.md); ensina o cliente a tipar .from()/.rpc() automaticamente
 
 export async function createClient() {               // função que o resto do site vai chamar sempre que precisar falar com o banco
   const cookieStore = await cookies();                // pega os cookies da visita atual (é neles que fica guardado o login)
 
-  return createServerClient(                          // cria e devolve a conexão pronta
+  return createServerClient<Database>(                // "<Database>" é o que faz .from("tabela").select(...) já vir tipado
     process.env.NEXT_PUBLIC_SUPABASE_URL!,            // endereço do projeto, lido do .env.local; o "!" garante ao TypeScript que essa variável existe
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, // chave pública, também lida do .env.local
     {

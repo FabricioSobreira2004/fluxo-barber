@@ -11,9 +11,10 @@ import { hojeISO } from "@/utils/data"; // data de hoje, no fuso do Brasil
 import { aplicarMascaraTelefone } from "@/utils/telefone"; // formata o telefone enquanto o cliente digita
 import { validarNomeCliente, validarTelefoneCliente } from "@/utils/validacao"; // mesmas regras de validação usadas no banco (migration 003)
 import { buscarHorariosLivres, criarAgendamentoPublico } from "./actions"; // funções do servidor chamadas direto (sem formulário tradicional)
+import { type Tabelas } from "@/utils/supabase/database.types"; // tipos gerados do banco (ver PENDENCIAS.md)
 
-interface Barbeiro { id: string; nome: string } // só os campos usados aqui
-interface Servico { id: string; nome: string; duracao_min: number; preco_centavos: number }
+type Barbeiro = Pick<Tabelas<"barbeiros">, "id" | "nome">; // só os campos usados aqui, direto do tipo gerado da tabela
+type Servico = Pick<Tabelas<"servicos">, "id" | "nome" | "duracao_min" | "preco_centavos">;
 
 interface PropriedadesFormulario {
   barbeariaId: string;

@@ -1,8 +1,9 @@
 import { type VarianteBadge } from "@/components/ui/Badge"; // cores disponíveis pro Badge
+import { type TipoEnum } from "@/utils/supabase/database.types"; // tipo gerado a partir do enum "status_agendamento" do banco
 
-// mesmos valores do enum "status_agendamento" criado no banco (ver supabase/migrations/001_schema_inicial.sql);
-// se um dia mudar lá, precisa mudar aqui também
-export type StatusAgendamento = "agendado" | "confirmado" | "concluido" | "cancelado" | "faltou";
+// vem direto do enum do banco (ver supabase/migrations/001_schema_inicial.sql); se mudar lá e você rodar
+// "supabase gen types" de novo, o TypeScript avisa aqui automaticamente onde precisa ajustar
+export type StatusAgendamento = TipoEnum<"status_agendamento">;
 
 interface ConfigStatus { // tudo que a interface precisa saber sobre um status, num só lugar
   rotulo: string; // texto mostrado no Badge
