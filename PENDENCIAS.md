@@ -28,18 +28,20 @@ ser feito perto do lançamento de verdade pra clientes pagantes.
   banco mudar, rode `npm run gen:types` pra atualizar o arquivo.
 - **Email de contato definido:** `contato.fluxobarber@gmail.com`, usado em
   `/termos`, `/privacidade` e no rodapé do site.
+- **Migration 005 aplicada (05/10/2026)**, com 2 ajustes seus em relação ao
+  arquivo original (já refletidos em `supabase/migrations/005_barbearia_pronta_publica.sql`):
+  o 3º `exists` passou a filtrar por `b.barbearia_id` (em vez de
+  `ht.barbearia_id`), e foi adicionado `grant execute on function
+  barbearia_esta_pronta(text) to anon, authenticated;` no final — sem isso, o
+  PostgREST recusaria a chamada via API mesmo a função sendo `security
+  definer`. Testado por você no SQL Editor: `barbearia-teste` e
+  `barbearia-config-rapida-teste` → `true`; `barbearia-tutorial-teste`,
+  `salao-de-beleza` e um slug inexistente → `false` — bate exatamente com o
+  esperado (as duas primeiras têm barbeiro+serviço+horário ativos; as outras,
+  não). A partir de agora, a página pública `/b/[slug]` já reflete a
+  prontidão de verdade, em vez de sempre mostrar "ainda não pronta".
 
 ## 🔧 Para fazer agora
-
-### Rodar a migration 005 (função nova pra página pública)
-
-`supabase/migrations/005_barbearia_pronta_publica.sql` ainda **não foi executada**.
-Ela cria a função `barbearia_esta_pronta(p_slug)`, que a página pública `/b/[slug]`
-usa agora pra saber se a barbearia já tem barbeiro + serviço + horário cadastrados
-(sem isso rodado, a página pública vai sempre tratar a barbearia como "não pronta",
-mesmo quando já está — ela cai no `data: pronta` vindo `null`/erro da chamada RPC,
-que o código trata como "não", por segurança). Copie o conteúdo do arquivo e rode
-no **SQL Editor do Supabase**, do mesmo jeito que as migrations anteriores.
 
 ### Apagar as contas de teste (tutorial + configuração rápida)
 

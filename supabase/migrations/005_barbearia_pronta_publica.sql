@@ -1,7 +1,9 @@
 -- ============================================================================
 -- 005_barbearia_pronta_publica.sql
--- ⚠️ ESTE ARQUIVO AINDA NÃO FOI EXECUTADO -- precisa ser rodado por você no
--- SQL Editor do Supabase (ver PENDENCIAS.md, seção "Para fazer agora").
+-- ✅ JÁ FOI EXECUTADA no Supabase (05/10/2026, com os 2 ajustes que já estão
+-- neste arquivo: o 3º "exists" filtra por "b.barbearia_id" em vez de
+-- "ht.barbearia_id", e o "grant" no final) -- este arquivo fica só pra
+-- versionar no git o que foi aplicado. Não precisa rodar de novo.
 --
 -- O QUE FAZ: cria a função "barbearia_esta_pronta(p_slug)", usada pela
 -- página pública /b/[slug] pra saber se aquela barbearia já tem os 3
@@ -46,7 +48,7 @@ begin
       select 1
       from horarios_trabalho ht
       join barbeiros b on b.id = ht.barbeiro_id
-      where ht.barbearia_id = v_barbearia_id
+      where b.barbearia_id = v_barbearia_id -- filtra pela barbearia do BARBEIRO (não do horário): garante que só conta horário de barbeiro desta barbearia mesmo
         and b.ativo = true
     )
   into v_pronta;
@@ -54,3 +56,8 @@ begin
   return v_pronta;
 end;
 $$;
+
+-- libera a chamada via API (anon = visitante não logado, na página pública; authenticated =
+-- usuário logado, ex: o próprio dono revendo a própria página) -- sem isso, o PostgREST recusa
+-- a chamada RPC com erro de permissão, mesmo a função sendo "security definer"
+grant execute on function barbearia_esta_pronta(text) to anon, authenticated;
