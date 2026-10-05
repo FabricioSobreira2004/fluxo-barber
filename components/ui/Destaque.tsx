@@ -7,8 +7,13 @@ interface PropriedadesDestaque { // o que o componente Destaque recebe
 
 // trecho de texto em dourado e semi-negrito, usado pra chamar atenção pra palavras-chave
 // dentro de frases maiores (subtítulo do hero, descrição dos cards de benefício etc.)
-// "inline-block": continua fluindo junto com o resto do parágrafo, mas passa a aceitar
-// transform (scale) — é o que permite o GSAP dar o "pop" de realce no subtítulo do hero.
+//
+// IMPORTANTE: fica como "inline" normal (o padrão de um <strong>), NUNCA "inline-block".
+// Um "inline-block" vira uma caixa "atômica" pro navegador — e o navegador pode quebrar a
+// linha logo depois dessa caixa mesmo sem espaço nenhum no texto, o que fazia a pontuação
+// colada em seguida (ex: a vírgula de "...a qualquer hora<Destaque/>, sem...") "escapar" pra
+// linha seguinte sozinha. Sendo "inline" puro, o destaque flui com o resto do texto como
+// qualquer palavra normal, e a pontuação colada nunca mais se separa dele.
 export function Destaque({ children, className = "" }: PropriedadesDestaque) {
-  return <strong className={`inline-block font-semibold text-dourado ${className}`}>{children}</strong>;
+  return <strong className={`font-semibold text-dourado ${className}`}>{children}</strong>;
 }

@@ -4,6 +4,7 @@ import { useRef } from "react"; // guarda a referência à seção (escopo da an
 import { useGSAP } from "@gsap/react"; // hook oficial do GSAP pra React: já limpa a animação sozinho ao desmontar
 import gsap from "gsap"; // motor de animação
 import { ScrollTrigger } from "gsap/ScrollTrigger"; // plugin que dispara a animação quando a seção entra na tela
+import { Destaque } from "@/components/ui/Destaque"; // trecho de texto em dourado, usado no "3 passos" do título
 
 gsap.registerPlugin(useGSAP, ScrollTrigger); // registra os plugins antes de usá-los
 
@@ -59,7 +60,7 @@ export function ComoFunciona() { // seção "Como funciona": explica o fluxo em 
           demais um texto curto — mas o CONTÊINER da seção segue o padrão da página) */}
       <div className="mx-auto max-w-6xl">
         <h2 className="mb-12 text-center font-display text-3xl font-bold text-balance text-texto md:text-4xl"> {/* "text-balance": evita sobrar 1 palavra sozinha numa linha, se o título quebrar */}
-          Como funciona
+          Sua barbearia pronta em <Destaque>3 passos</Destaque>
         </h2>
         <div className="relative mx-auto grid max-w-4xl grid-cols-1 items-start gap-10 md:grid-cols-3 md:gap-6">
           {/* linha dourada ligando os 3 passos: só no desktop, porque no celular os passos já ficam

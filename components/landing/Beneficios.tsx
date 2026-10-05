@@ -1,7 +1,7 @@
 "use client"; // usa useGSAP e ScrollTrigger, que só existem no navegador
 
 import { useRef } from "react"; // guarda a referência à grade (escopo da animação e gatilho do ScrollTrigger)
-import { CalendarCheck, Clock, Users, Scissors } from "lucide-react"; // ícones dos 4 cards de benefício
+import { CalendarCheck, Clock, Users, Scissors, TrendingUp, Crown } from "lucide-react"; // ícones dos 6 cards de benefício
 import { useGSAP } from "@gsap/react"; // hook oficial do GSAP pra React: já limpa a animação sozinho ao desmontar
 import gsap from "gsap"; // motor de animação
 import { ScrollTrigger } from "gsap/ScrollTrigger"; // plugin que dispara a animação quando o elemento entra na tela
@@ -9,7 +9,11 @@ import { Destaque } from "@/components/ui/Destaque"; // trecho de texto em doura
 
 gsap.registerPlugin(useGSAP, ScrollTrigger); // registra os plugins antes de usá-los
 
-const beneficios = [ // lista de benefícios mostrados na landing page: foco na dor do dono de barbearia, não só na função
+// lista de benefícios mostrados na landing page: foco na dor E no ganho do dono de barbearia
+// (tempo, lucro, imagem profissional), nunca só na descrição técnica da função.
+// IMPORTANTE: a pontuação (vírgula, ponto) sempre colada no fechamento do <Destaque>, na mesma
+// linha, sem espaço — só assim ela nunca "escapa" sozinha pra linha seguinte (ver Destaque.tsx)
+const beneficios = [
   {
     Icone: CalendarCheck,
     titulo: "Agenda online 24h",
@@ -35,7 +39,7 @@ const beneficios = [ // lista de benefícios mostrados na landing page: foco na 
     titulo: "Equipe organizada",
     descricao: (
       <>
-        Cada barbeiro com seus horários e sua agenda, <Destaque>tudo num só lugar</Destaque>, no
+        Cada barbeiro com seus horários e sua agenda, <Destaque>tudo em um só lugar</Destaque>, no
         computador ou no celular.
       </>
     ),
@@ -47,6 +51,26 @@ const beneficios = [ // lista de benefícios mostrados na landing page: foco na 
       <>
         Cadastre cortes, barbas e combos com <Destaque>preço e duração</Destaque>, e a agenda
         calcula o resto.
+      </>
+    ),
+  },
+  {
+    Icone: TrendingUp,
+    titulo: "Mais tempo, mais lucro",
+    descricao: (
+      <>
+        Menos tempo no celular marcando horário é <Destaque>mais tempo na cadeira</Destaque>{" "}
+        atendendo. Agenda organizada, cadeira sempre ocupada.
+      </>
+    ),
+  },
+  {
+    Icone: Crown,
+    titulo: "Barbearia de alto padrão",
+    descricao: (
+      <>
+        Um link profissional com o nome da sua barbearia passa confiança e mostra ao cliente que
+        ele está em <Destaque>outro nível</Destaque>.
       </>
     ),
   },
@@ -67,7 +91,7 @@ export function Beneficios() { // grade de 4 cards que aparecem um a um conforme
           scale: 0.95, // começa levemente menor e cresce até o tamanho final, reforçando a entrada
           duration: 0.7,
           ease: "power2.out",
-          stagger: 0.2, // um card aparece um pouco mais depois do outro (antes era 0.15), pra dar tempo de notar cada um
+          stagger: 0.12, // um card aparece pouco depois do outro; com 6 cards agora, um stagger menor evita que o último demore demais pra aparecer
           clearProps: "all", // ao terminar, remove o style inline (opacity/transform) — garante que os 4 cards acabem exatamente iguais (y:0, scale:1), sem nenhum resíduo de arredondamento
           scrollTrigger: {
             trigger: gradeRef.current,
@@ -86,9 +110,10 @@ export function Beneficios() { // grade de 4 cards que aparecem um a um conforme
     // "py-16 md:py-20": mesmo ritmo vertical das outras seções da página (Como funciona, Chamada final)
     <section ref={gradeRef} className="px-6 py-16 md:px-12 md:py-20">
       {/* "mx-auto max-w-6xl": mesma largura máxima e mesmo alinhamento das outras seções.
-          "items-stretch" (redundante com o padrão do grid, mas explícito): garante que os 4 cards
-          fiquem com a MESMA altura na mesma linha, mesmo quando o texto de um é maior que o outro */}
-      <div className="mx-auto grid max-w-6xl items-stretch gap-6 md:grid-cols-2 lg:grid-cols-4">
+          "items-stretch" (redundante com o padrão do grid, mas explícito): garante que os 6 cards
+          fiquem com a MESMA altura na mesma linha, mesmo quando o texto de um é maior que o outro.
+          3 colunas no desktop (2 linhas de 3), 2 no tablet (3 linhas de 2), 1 no celular */}
+      <div className="mx-auto grid max-w-6xl items-stretch gap-6 md:grid-cols-2 lg:grid-cols-3">
         {beneficios.map(({ Icone, titulo, descricao }) => (
           <div
             key={titulo}

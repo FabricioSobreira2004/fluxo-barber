@@ -10,6 +10,102 @@ rodada em "Concluído", "Para fazer agora" e "Pré-lançamento".
 
 ---
 
+## Nova rodada — ajustes na landing page + tutorial de boas-vindas (outubro de 2026)
+
+Rodada com 2 partes grandes: ajustes na landing page (Parte A) e o tutorial guiado do
+painel (Parte B). Cada parte teve seu próprio commit.
+
+### Parte A — ajustes na landing page
+
+**Arquivos alterados:** `components/landing/Hero.tsx`, `components/landing/Beneficios.tsx`,
+`components/landing/ComoFunciona.tsx`, `components/landing/ChamadaFinal.tsx`,
+`components/ui/Destaque.tsx`
+**Arquivo novo:** `components/landing/IndicadorRolar.tsx`
+
+#### A1 — "Como funciona" (na verdade, os cards) visível sem rolar
+
+**Escolhi reduzir o espaço vertical do hero, sem reordenar as seções.** Pensei nas duas opções
+que você deu: mover "Como funciona" pra antes dos cards quebraria a lógica de venda (primeiro
+mostra o BENEFÍCIO pro dono, só depois explica o passo a passo — inverter isso enfraquece o
+argumento de venda, sem ganhar nada em "conteúdo visível", já que o que importa é só a ALTURA do
+hero, não a ordem das seções depois dele). Então:
+- `pt`/`pb` do hero caíram de `pt-16 md:pt-24 pb-8 md:pb-10` pra `pt-10 md:pt-14 pb-6 md:pb-8`.
+- O subtítulo ficou mais curto (ver A3), o que também ajudou a reduzir a altura.
+- Conferi (forçando o estado final, via `<iframe>` de largura E altura fixas — a mesma técnica
+  de rodadas anteriores, agora também controlando a altura) que o topo da seção de cards aparece
+  bem dentro da tela, sem rolar, nas 4 resoluções pedidas: a 383px do topo em notebook/desktop
+  (1366×768, 1440×900 e 1920×1080 — sobra bastante espaço pra "pré-visualizar" os cards) e a
+  531px no celular (390×844).
+- **Seta de "role para baixo":** `IndicadorRolar.tsx`, novo componente. Flutua devagar (GSAP,
+  `yoyo` infinito) e some com um fade rápido assim que `window.scrollY` passa de 24px. Com
+  movimento reduzido, ela fica parada (só a parte do "flutuar" é bloqueada pelo
+  `prefers-reduced-motion`; o sumiço ao rolar não é "movimento animado", é só reação a uma ação
+  do próprio usuário, então não me pareceu precisar entrar nessa regra).
+
+#### A2 — brilho da palavra "barbearias" removido
+
+Eu tinha colocado um brilho (uma faixa clara, inclinada, deslizando por cima da palavra) na
+rodada anterior. Você reportou que aparecia um retângulo cinza/prateado — o recorte
+(`overflow-hidden`) do span pai não acompanhava bem a INCLINAÇÃO (`skew`) do brilho, deixando as
+bordas da faixa visíveis em vez de um brilho suave. Em vez de tentar consertar o recorte, **tirei
+o efeito inteiro**, como você sugeriu na dúvida: "barbearias" agora é só a última palavra do
+título, estática, em dourado (`#C9A227`), no mesmo fluxo `inline-flex` das outras 3 — sem
+`overflow-hidden`, sem `position: relative`, sem elemento decorativo extra. Mais simples e sem
+risco de recriar o bug.
+
+#### A3 — subtítulo novo, mais curto
+
+Troquei pelo texto sugerido (com pequenos ajustes de pontuação), com os 4 destaques pedidos:
+"**Automatize sua agenda** e leve sua barbearia a outro nível: seus clientes **agendam
+sozinhos**, **24 horas por dia**, e você foca no que **gera lucro**." Testei a largura máxima do
+parágrafo até caber em no máximo 2 linhas nas telas de desktop (ficou em `max-w-3xl`, testado via
+`iframe` nas 3 resoluções maiores — sempre 2 linhas).
+
+#### A4 — 6 cards de benefício (3 colunas no desktop)
+
+Grade passou de `md:grid-cols-2 lg:grid-cols-4` pra `md:grid-cols-2 lg:grid-cols-3` (3 no
+desktop, 2 no tablet, 1 no celular). Os 2 cards novos, como pedido: "Mais tempo, mais lucro"
+(ícone `TrendingUp`) e "Barbearia de alto padrão" (ícone `Crown`). Revisei o card "Equipe
+organizada": o destaque "tudo **num** só lugar" virou "tudo **em um** só lugar" (ver regra de
+copy sobre evitar "num/numa" — era o único lugar da página que ainda usava). Nenhum card (novo ou
+revisado) menciona número, porcentagem, estatística ou depoimento — só a lógica do benefício.
+
+#### A5 — bug da vírgula no `<Destaque>`
+
+**Causa real:** o componente `Destaque` estava como `inline-block` (eu tinha feito isso de
+propósito, numa rodada anterior, pra um efeito de "pop" com `scale` no GSAP). Só que um
+`inline-block` vira uma caixa "atômica" pro navegador, e existe uma regra de quebra de linha que
+permite quebrar logo DEPOIS dessa caixa, mesmo sem espaço nenhum no texto — foi isso que fazia a
+vírgula (ou o ponto) colada em seguida "escapar" sozinha pra linha de baixo, mesmo grudada no
+JSX sem espaço nenhum.
+**Correção:** `Destaque` voltou a ser `inline` puro (o padrão de um `<strong>`). Como
+`transform` não tem efeito em elementos `inline`, o realce com `scale` no subtítulo do hero
+(Parte 3 da rodada anterior) teve que mudar — agora é só um fade de opacidade (de 35% até 100%),
+sem `scale`/`y`. Conferi TODOS os destaques da página (subtítulo do hero + 6 cards) com um script
+que compara, pra cada `<strong>` seguido de pontuação colada, se a pontuação renderiza na MESMA
+linha que o fim do destaque — zero problemas encontrados, em 1366/768/390px.
+
+#### A6 — cor nos títulos das seções
+
+"Como funciona" virou "Sua barbearia pronta em **3 passos**" (mais vendedor, como você sugeriu,
+com "3 passos" em dourado via `<Destaque>`). A chamada final ganhou o destaque em "**perder
+tempo**", e o texto de apoio abaixo dela mudou pra "Crie sua conta gratuita, automatize sua
+agenda e ganhe tempo pro que realmente gera lucro." — mesmo tom de lucro do subtítulo do topo,
+fechando a página com a mesma mensagem.
+
+#### A7 — validação
+
+Testei via `<iframe>` de largura E altura fixas (375, 768, 1366, 1440, 1920px de largura — a
+técnica mais confiável que encontrei, já que minha ferramenta de navegador não redimensiona a
+janela de verdade, explicado em rodadas anteriores): sem rolagem horizontal em nenhuma; os 6
+cards com a mesma altura dentro de cada linha; nenhuma pontuação "órfã"; início da seção de
+benefícios sempre visível sem rolar, nas 4 resoluções do pedido original. Como todas as
+animações desta parte continuam com `clearProps` e dentro do
+`prefers-reduced-motion: no-preference`, o estado estático (movimento reduzido) continua
+idêntico ao estado final animado, pelo mesmo motivo já validado nas rodadas anteriores.
+
+---
+
 ## Nova rodada — correção dos bugs visuais da landing page (outubro de 2026)
 
 Você testou a rodada anterior e encontrou 6 bugs visuais, mais um pedido de revisão geral de
