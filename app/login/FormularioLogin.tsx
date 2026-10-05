@@ -26,7 +26,12 @@ export function FormularioLogin({ redirecionarPara, erroInicial }: PropriedadesF
       </div>
 
       <div>
-        <Label htmlFor="senha">Senha</Label>
+        <div className="flex items-baseline justify-between"> {/* legenda à esquerda, link de recuperação à direita */}
+          <Label htmlFor="senha">Senha</Label>
+          <Link href="/esqueci-senha" className="mb-1 text-xs text-dourado hover:text-dourado-claro">
+            Esqueci minha senha
+          </Link>
+        </div>
         <Input id="senha" name="senha" type="password" autoComplete="current-password" required />
       </div>
 

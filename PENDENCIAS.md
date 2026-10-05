@@ -47,6 +47,22 @@ erro "over_email_send_rate_limit" só de testar o cadastro 2 vezes seguidas).
      clientes de verdade**, senão qualquer pessoa cadastra uma conta com
      email de outra pessoa sem precisar confirmar nada.
 
+## Nova rodada — "Esqueci minha senha"
+
+**O que é:** criei o fluxo completo: `/login` tem o link "Esqueci minha
+senha" → `/esqueci-senha` (pede o email) → Supabase manda um email →
+`/auth/confirm` (já existia, reaproveitado) processa o link → `/redefinir-senha`
+(define a nova senha).
+
+**O que fazer no painel do Supabase:**
+1. Isso usa a MESMA configuração de **Site URL** e **Redirect URLs** da
+   pendência "Confirmação de email" mais abaixo (Authentication → URL
+   Configuration). Se você já resolveu aquela pendência, não precisa fazer
+   nada de novo aqui.
+2. Opcional: em **Authentication → Email Templates → Reset Password**, você
+   pode personalizar o texto do email enviado (o padrão do Supabase já
+   funciona, só não está em português).
+
 ## Nova rodada — Termos de Uso e Política de Privacidade
 
 **O que é:** criei `/termos` e `/privacidade`, com link no cadastro
