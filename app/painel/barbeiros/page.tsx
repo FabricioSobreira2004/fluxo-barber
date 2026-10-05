@@ -1,7 +1,9 @@
 import { type Metadata } from "next"; // tipo da metadata desta página
+import { UserPlus } from "lucide-react"; // ícone do estado vazio
 import { obterBarbeariaAtual } from "@/utils/supabase/barbearia-atual"; // descobre a barbearia do usuário logado
 import { Badge } from "@/components/ui/Badge"; // etiqueta colorida de status
 import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
+import { EstadoVazio } from "@/components/ui/EstadoVazio"; // mensagem amigável quando a lista está vazia
 import { BotaoApagar } from "@/components/painel/BotaoApagar"; // botão "Apagar" com confirmação, reutilizado em Barbeiros/Serviços
 import { FormularioNovoBarbeiro } from "./FormularioNovoBarbeiro"; // formulário (Client Component) de cadastro
 import { alternarAtivoBarbeiro, apagarBarbeiro } from "./actions"; // Server Actions usadas nos botões de cada linha
@@ -50,8 +52,12 @@ export default async function PaginaBarbeiros() {
           </Card>
         ))}
 
-        {(barbeiros ?? []).length === 0 && ( // mensagem amigável quando ainda não existe nenhum barbeiro
-          <p className="text-sm text-texto-secundario">Nenhum barbeiro cadastrado ainda.</p>
+        {(barbeiros ?? []).length === 0 && ( // mensagem amigável quando ainda não existe nenhum barbeiro (sem botão: o formulário já está logo acima)
+          <EstadoVazio
+            Icone={UserPlus}
+            titulo="Você ainda não cadastrou nenhum barbeiro"
+            descricao="Cadastre o primeiro acima para começar a receber agendamentos."
+          />
         )}
       </div>
     </div>

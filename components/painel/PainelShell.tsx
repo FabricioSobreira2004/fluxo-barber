@@ -7,11 +7,11 @@ import { CalendarDays, Users, Scissors, Clock, Settings } from "lucide-react"; /
 import { Logo } from "@/components/ui/Logo"; // marca "Fluxo Barber"
 
 const ITENS_MENU = [ // os 5 destinos do painel, nessa ordem, tanto no menu lateral quanto no inferior
-  { href: "/painel/agenda", rotulo: "Agenda", Icone: CalendarDays },
-  { href: "/painel/barbeiros", rotulo: "Barbeiros", Icone: Users },
-  { href: "/painel/servicos", rotulo: "Serviços", Icone: Scissors },
-  { href: "/painel/horarios", rotulo: "Horários", Icone: Clock },
-  { href: "/painel/configuracoes", rotulo: "Configurações", Icone: Settings },
+  { href: "/painel/agenda", rotulo: "Agenda", Icone: CalendarDays, dataTour: undefined },
+  { href: "/painel/barbeiros", rotulo: "Barbeiros", Icone: Users, dataTour: "menu-barbeiros" }, // "dataTour": onde o tour guiado (components/painel/Tour.tsx) encontra esse item pra destacar
+  { href: "/painel/servicos", rotulo: "Serviços", Icone: Scissors, dataTour: "menu-servicos" },
+  { href: "/painel/horarios", rotulo: "Horários", Icone: Clock, dataTour: "menu-horarios" },
+  { href: "/painel/configuracoes", rotulo: "Configurações", Icone: Settings, dataTour: undefined },
 ];
 
 interface PropriedadesPainelShell { // o que o layout (Server Component) precisa passar pra cá
@@ -30,12 +30,13 @@ export function PainelShell({ nomeBarbearia, botaoSair, children }: Propriedades
         <p className="mb-8 truncate text-sm text-texto-secundario">{nomeBarbearia}</p>
 
         <nav className="flex flex-1 flex-col gap-1">
-          {ITENS_MENU.map(({ href, rotulo, Icone }) => {
+          {ITENS_MENU.map(({ href, rotulo, Icone, dataTour }) => {
             const ativo = caminhoAtual.startsWith(href); // true quando a rota atual é essa (ou uma sub-rota dela)
             return (
               <Link
                 key={href}
                 href={href}
+                data-tour={dataTour} // undefined simplesmente não gera o atributo; o tour guiado procura só os itens que têm esse valor
                 className={ // destaque dourado no item ativo, cinza nos demais
                   `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                     ativo ? "bg-dourado/10 text-dourado" : "text-texto-secundario hover:bg-borda hover:text-texto"
@@ -65,12 +66,13 @@ export function PainelShell({ nomeBarbearia, botaoSair, children }: Propriedades
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 flex border-t border-borda bg-superficie md:hidden"> {/* menu inferior só no celular */}
-        {ITENS_MENU.map(({ href, rotulo, Icone }) => {
+        {ITENS_MENU.map(({ href, rotulo, Icone, dataTour }) => {
           const ativo = caminhoAtual.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
+              data-tour={dataTour} // mesmo atributo do menu lateral: no celular é ESTE item que está visível, e o tour acha o que estiver visível
               className={`flex flex-1 flex-col items-center gap-1 py-2 text-[11px] ${ativo ? "text-dourado" : "text-texto-secundario"}`}
             >
               <Icone className="h-5 w-5" aria-hidden />

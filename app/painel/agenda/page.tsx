@@ -1,17 +1,22 @@
 import Link from "next/link"; // navegação entre dias e barbeiros, via querystring
 import { type Metadata } from "next"; // tipo da metadata desta página
-import { ChevronLeft, ChevronRight } from "lucide-react"; // setas de navegação entre dias
+import { ChevronLeft, ChevronRight, CalendarX } from "lucide-react"; // setas de navegação e ícone do estado vazio
 import { obterBarbeariaAtual } from "@/utils/supabase/barbearia-atual"; // descobre a barbearia do usuário logado
+import { obterOrigemSite } from "@/utils/origem-site"; // domínio atual do site, pra montar a URL pública completa
 import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
+import { EstadoVazio } from "@/components/ui/EstadoVazio"; // mensagem amigável quando não há nada nesse dia
 import { hojeISO, somarDias, limitesDoDia, formatarDataLonga } from "@/utils/data"; // utilitários de data/hora no fuso do Brasil
 import { FormularioNovoAgendamento } from "./FormularioNovoAgendamento"; // formulário (Client Component) de criação
 import { CardAgendamento } from "./CardAgendamento"; // card visual de cada agendamento da lista
 import { type AgendamentoComRelacionamentos } from "./tipos"; // formato da linha vinda do banco, com os relacionamentos
+import { LinkBarbearia } from "@/components/painel/LinkBarbearia"; // card "Seu link", com copiar/WhatsApp/abrir
+import { ChecklistPrimeirosPassos, type ItemChecklist } from "@/components/painel/ChecklistPrimeirosPassos"; // card de progresso dos primeiros passos
+import { Tour } from "@/components/painel/Tour"; // tutorial guiado (só aparece automaticamente no 1º acesso)
 
 export const metadata: Metadata = { title: "Agenda | Fluxo Barber" }; // título específico desta página do painel
 
 export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
-  const { supabase, barbeariaId } = await obterBarbeariaAtual(); // garante login e descobre em qual barbearia buscar
+  const { supabase, barbeariaId, user } = await obterBarbeariaAtual(); // garante login e descobre em qual barbearia buscar
   const parametros = await props.searchParams; // searchParams é uma Promise no Next.js 16, por isso o await
 
   const dataBruta = parametros.data; // dia sendo visualizado, vindo da URL (?data=AAAA-MM-DD)
@@ -56,6 +61,24 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
     consultaAgendamentos = consultaAgendamentos.eq("barbeiro_id", barbeiroFiltroId);
   }
 
+  // tudo que é só pro card "Seu link", pro checklist e pro tour guiado — buscado em paralelo com o
+  // que a agenda já buscava, pra não somar um monte de "ida e volta" ao banco em sequência
+  const [
+    { data: barbearia },
+    origemSite,
+    { count: totalBarbeiros },
+    { count: totalServicos },
+    { count: totalHorarios },
+    { count: totalAgendamentosHistorico },
+  ] = await Promise.all([
+    supabase.from("barbearias").select("nome, slug").eq("id", barbeariaId).single(),
+    obterOrigemSite(),
+    supabase.from("barbeiros").select("id", { count: "exact", head: true }).eq("barbearia_id", barbeariaId), // TODOS os barbeiros (não só os ativos): o checklist é sobre ter cadastrado, não sobre estar ativo agora
+    supabase.from("servicos").select("id", { count: "exact", head: true }).eq("barbearia_id", barbeariaId),
+    supabase.from("horarios_trabalho").select("id", { count: "exact", head: true }).eq("barbearia_id", barbeariaId),
+    supabase.from("agendamentos").select("id", { count: "exact", head: true }).eq("barbearia_id", barbeariaId), // em QUALQUER dia, não só no dia selecionado na tela
+  ]);
+
   const { data: agendamentosBrutos } = await consultaAgendamentos;
   // com os tipos gerados do banco (Database em utils/supabase/database.types.ts), o Supabase já sabe, pelas
   // chaves estrangeiras, que cada relacionamento aqui é um objeto único — não precisa mais de "as unknown as"
@@ -65,9 +88,30 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
   const diaSeguinte = somarDias(dataSelecionada, 1); // pra onde a seta ">" deve levar
   const sufixoBarbeiro = barbeiroFiltroId ? `&barbeiro=${barbeiroFiltroId}` : ""; // preserva o filtro ao trocar de dia
 
+  const linkJaCompartilhado = Boolean(user.user_metadata?.link_compartilhado); // true depois que o usuário clicou em Copiar ou WhatsApp pelo menos uma vez
+  const itensChecklist: ItemChecklist[] = [ // cada item é calculado a partir dos dados reais, nunca marcado "na mão"
+    { chave: "barbeiro", rotulo: "Cadastrar pelo menos 1 barbeiro", feito: (totalBarbeiros ?? 0) > 0, href: "/painel/barbeiros" },
+    { chave: "servico", rotulo: "Cadastrar pelo menos 1 serviço", feito: (totalServicos ?? 0) > 0, href: "/painel/servicos" },
+    { chave: "horario", rotulo: "Definir os horários de trabalho", feito: (totalHorarios ?? 0) > 0, href: "/painel/horarios" },
+    { chave: "link", rotulo: "Copiar ou compartilhar seu link", feito: linkJaCompartilhado, href: "#link-barbearia" },
+    { chave: "agendamento", rotulo: "Receber o primeiro agendamento", feito: (totalAgendamentosHistorico ?? 0) > 0 },
+  ];
+
   return (
     <div className="flex flex-col gap-6">
+      {/* o tour só aparece de verdade quando "tour_visto" ainda não está marcado no usuário —
+          essa é a ÚNICA tela do painel que o monta, porque é a 1ª que aparece depois do onboarding */}
+      <Tour exibirAutomaticamente={!user.user_metadata?.tour_visto} nomeBarbearia={barbearia?.nome ?? ""} />
+
       <h1 className="font-display text-2xl font-semibold text-texto">Agenda</h1>
+
+      {barbearia && ( // defesa simples: sem barbearia (não deveria acontecer aqui), não tem link pra montar
+        <div id="link-barbearia">
+          <LinkBarbearia slug={barbearia.slug} nomeBarbearia={barbearia.nome} origemSite={origemSite} />
+        </div>
+      )}
+
+      <ChecklistPrimeirosPassos itens={itensChecklist} escondidoInicialmente={Boolean(user.user_metadata?.checklist_escondido)} />
 
       <div className="flex flex-wrap items-center justify-between gap-3"> {/* navegação de dia + filtro de barbeiro */}
         <div className="flex items-center gap-2">
@@ -118,13 +162,17 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3"> {/* lista dos agendamentos do dia, em ordem cronológica */}
+      <div data-tour="lista-agenda" className="flex flex-col gap-3"> {/* lista dos agendamentos do dia, em ordem cronológica */}
         {agendamentos.map((agendamento) => (
           <CardAgendamento key={agendamento.id} agendamento={agendamento} />
         ))}
 
         {agendamentos.length === 0 && ( // mensagem amigável quando não há nada marcado nesse dia
-          <p className="text-sm text-texto-secundario">Nenhum agendamento nesse dia.</p>
+          <EstadoVazio
+            Icone={CalendarX}
+            titulo="Nenhum agendamento nesse dia"
+            descricao="Use o formulário abaixo pra criar o primeiro agendamento, ou escolha outro dia."
+          />
         )}
       </div>
 

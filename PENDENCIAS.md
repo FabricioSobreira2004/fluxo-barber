@@ -31,6 +31,31 @@ ser feito perto do lançamento de verdade pra clientes pagantes.
 
 ## 🔧 Para fazer agora
 
+### Apagar a conta de teste do tutorial guiado
+
+Pra testar o tour/checklist da Parte B desta rodada, criei UMA conta de teste no seu
+`localhost` (confirmação de email estava desligada, então não precisei de um email de
+verdade): `teste.tutorial@fluxobarber.test`, barbearia "Barbearia Tutorial Teste"
+(slug `barbearia-tutorial-teste`), com 1 barbeiro de teste ("João Barbeiro") — sem
+serviço, sem horário e sem agendamento algum cadastrado. Quando quiser apagar:
+
+1. **Confira antes de apagar** (SQL Editor do Supabase), pra ter certeza que é a
+   barbearia certa:
+   ```sql
+   select id, nome, slug, criado_em from barbearias where slug = 'barbearia-tutorial-teste';
+   ```
+2. **Apague a barbearia** — todas as tabelas (membros, barbeiros, serviços, clientes,
+   horários, agendamentos) têm `on delete cascade` ligado a `barbearia_id`, então
+   apagar só essa linha já leva tudo junto:
+   ```sql
+   delete from barbearias where slug = 'barbearia-tutorial-teste';
+   ```
+3. **Apague o usuário**: painel do Supabase → **Authentication → Users**, procure
+   `teste.tutorial@fluxobarber.test` e apague por lá (o botão de apagar usuário fica
+   no menu "..." da linha dele). Pode ser antes ou depois do passo 2 — são
+   independentes (apagar o usuário sozinho não apagaria a barbearia, porque é a
+   barbearia que "aponta" pro dono, e não o contrário).
+
 ### Testar o link de confirmação por email (preciso que você clique de verdade)
 
 A rota `app/auth/confirm/route.ts` agora entende os dois formatos de link que

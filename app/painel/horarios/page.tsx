@@ -1,7 +1,9 @@
 import Link from "next/link"; // navegação entre barbeiros (via querystring), sem perder a página
 import { type Metadata } from "next"; // tipo da metadata desta página
+import { UserPlus } from "lucide-react"; // ícone do estado vazio (sem nenhum barbeiro cadastrado ainda)
 import { obterBarbeariaAtual } from "@/utils/supabase/barbearia-atual"; // descobre a barbearia do usuário logado
 import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
+import { EstadoVazio } from "@/components/ui/EstadoVazio"; // mensagem amigável quando ainda não há barbeiro cadastrado
 import { FormularioIntervalo } from "./FormularioIntervalo"; // mini-formulário de adicionar intervalo (um por dia)
 import { removerIntervalo } from "./actions"; // Server Action usada no botão "Remover"
 
@@ -26,7 +28,12 @@ export default async function PaginaHorarios(props: PageProps<"/painel/horarios"
     return (
       <div className="flex flex-col gap-6">
         <h1 className="font-display text-2xl font-semibold text-texto">Horários de trabalho</h1>
-        <p className="text-sm text-texto-secundario">Cadastre um barbeiro primeiro, na aba Barbeiros.</p>
+        <EstadoVazio
+          Icone={UserPlus}
+          titulo="Nenhum barbeiro cadastrado ainda"
+          descricao="Cadastre pelo menos um barbeiro pra começar a definir os horários de trabalho dele."
+          acao={{ rotulo: "Cadastrar barbeiro", href: "/painel/barbeiros" }}
+        />
       </div>
     );
   }

@@ -1,7 +1,9 @@
 import { type Metadata } from "next"; // tipo da metadata desta página
+import { Scissors } from "lucide-react"; // ícone do estado vazio
 import { obterBarbeariaAtual } from "@/utils/supabase/barbearia-atual"; // descobre a barbearia do usuário logado
 import { Badge } from "@/components/ui/Badge"; // etiqueta colorida de status
 import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
+import { EstadoVazio } from "@/components/ui/EstadoVazio"; // mensagem amigável quando a lista está vazia
 import { centavosParaReais } from "@/utils/dinheiro"; // formata o preço (guardado em centavos) pra exibição
 import { BotaoApagar } from "@/components/painel/BotaoApagar"; // botão "Apagar" com confirmação, reutilizado em Barbeiros/Serviços
 import { FormularioNovoServico } from "./FormularioNovoServico"; // formulário (Client Component) de cadastro
@@ -58,8 +60,12 @@ export default async function PaginaServicos() {
           </Card>
         ))}
 
-        {(servicos ?? []).length === 0 && ( // mensagem amigável quando ainda não existe nenhum serviço
-          <p className="text-sm text-texto-secundario">Nenhum serviço cadastrado ainda.</p>
+        {(servicos ?? []).length === 0 && ( // mensagem amigável quando ainda não existe nenhum serviço (sem botão: o formulário já está logo acima)
+          <EstadoVazio
+            Icone={Scissors}
+            titulo="Você ainda não cadastrou nenhum serviço"
+            descricao="Cadastre o primeiro acima para aparecer na agenda e na página pública."
+          />
         )}
       </div>
     </div>

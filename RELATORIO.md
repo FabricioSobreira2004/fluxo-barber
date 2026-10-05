@@ -104,6 +104,109 @@ animações desta parte continuam com `clearProps` e dentro do
 `prefers-reduced-motion: no-preference`, o estado estático (movimento reduzido) continua
 idêntico ao estado final animado, pelo mesmo motivo já validado nas rodadas anteriores.
 
+### Parte B — tutorial de boas-vindas
+
+**Arquivos novos:** `utils/origem-site.ts`, `utils/supabase/metadados-usuario.ts`,
+`components/painel/acoes-progresso.ts`, `components/ui/EstadoVazio.tsx`,
+`components/painel/LinkBarbearia.tsx`, `components/painel/Tour.tsx`,
+`components/painel/ChecklistPrimeirosPassos.tsx`
+**Arquivos alterados:** `utils/supabase/barbearia-atual.ts`, `components/painel/PainelShell.tsx`,
+`app/painel/agenda/page.tsx`, `app/painel/configuracoes/page.tsx` (+ `FormularioConfiguracoes.tsx`),
+`app/painel/horarios/page.tsx`, `app/painel/barbeiros/page.tsx`, `app/painel/servicos/page.tsx`
+
+#### B1 — card "Seu link"
+
+`LinkBarbearia.tsx`: mostra a URL completa (montada com `utils/origem-site.ts`, que lê o domínio
+da própria requisição — nunca escrito na mão — então funciona igual no `localhost` e no site
+publicado), com "Copiar link" (feedback "Link copiado!" por 2s), "Compartilhar no WhatsApp"
+(`wa.me` com a mensagem já pronta) e "Abrir minha página". Fica no topo da Agenda e também em
+Configurações (que perdeu o link simples "Endereço público" que tinha antes — virou redundante).
+
+#### B2 — tour guiado
+
+`Tour.tsx` — a peça mais grande desta rodada, sem nenhuma biblioteca de tour pronta. Alguns
+detalhes de implementação que valem registrar:
+- **O "recorte" na tela escura** não é 1 elemento com buraco — são 4 `<div>`s escuros (acima,
+  abaixo, à esquerda e à direita do elemento em foco) mais um anel dourado decorativo. Assim o
+  clique passa limpo por cima do elemento destacado, mas continua bloqueado em qualquer outro
+  lugar da tela — sem precisar de CSS `clip-path` com buraco (mais difícil de acertar com
+  cantos arredondados) nem de nenhuma lib extra.
+- **Os passos 2, 3 e 4** (Barbeiros/Serviços/Horários) apontam pro `data-tour="menu-..."` dos
+  itens de menu, que agora existem TANTO no menu lateral (desktop) quanto no menu inferior
+  (celular) — o tour acha qual dos dois está de fato visível (`getClientRects().length > 0`,
+  um jeito barato de detectar "display: none") e destaca esse. Testei isso de verdade: numa
+  tela de 375px, confirmei que é o item do menu inferior que é encontrado, não o da barra
+  lateral (que nessa largura fica escondida).
+- **Posição do balão**: calculada tentando os 4 lados (direita, esquerda, baixo, cima) e
+  escolhendo o que tem mais espaço livre na tela — sempre preso dentro da viewport. Pra o menu
+  lateral (bastante espaço à direita), o balão aparece à direita; pro menu inferior do celular
+  (bastante espaço só em cima), aparece em cima — exatamente o comportamento pedido, sem
+  precisar de regra específica pra mobile: é consequência do mesmo cálculo genérico.
+- **Only transform/opacity + `prefers-reduced-motion`**: igual às animações da landing — o
+  recorte desliza (`top/left/width/height` tweenados, que viram só `transform`/sizing puro em
+  elementos sem padding) e o balão entra com fade + deslize (`autoAlpha`/`y`), tudo dentro de
+  `gsap.matchMedia`. Com movimento reduzido, tudo pula direto pro estado final.
+- **Acessibilidade**: `role="dialog"` + `aria-modal`, Esc fecha, setas ←/→ voltam/avançam, Tab
+  fica preso dentro do balão (cicla entre os botões, não escapa pro resto da página).
+- **Guardado nos metadados do usuário** (`supabase.auth.updateUser`), sem nenhuma tabela nova:
+  `tour_visto` (nunca mais aparece sozinho depois disso) e, em Configurações, um link "Ver
+  tutorial novamente" que zera essa flag e manda de volta pra Agenda. Como `updateUser()` tem
+  pelo menos um relato de SUBSTITUIR os metadados em vez de mesclar (dependendo da versão/SDK),
+  `utils/supabase/metadados-usuario.ts` sempre lê o usuário de novo e mescla na mão antes de
+  salvar — nunca corre o risco de apagar outro campo sem querer.
+- **Celebração final**: ao concluir o último passo, uma telinha com o ícone `PartyPopper`
+  "estourando" (GSAP, `back.out`) e a mensagem combinada, fechando sozinha depois de ~2s.
+
+#### B3 — checklist "Primeiros passos"
+
+`ChecklistPrimeirosPassos.tsx`, no topo da Agenda. Cada item é calculado a partir de uma consulta
+real ao banco (quantidade de barbeiros/serviços/horários/agendamentos daquela barbearia — todas
+em paralelo, via `Promise.all`, pra não encadear uma consulta atrás da outra) — nunca marcado "na
+mão". O item do link usa o mesmo metadado `link_compartilhado` do B1 (marcado ao clicar em Copiar
+ou WhatsApp). Barra de progresso em CSS puro (`width` com transição) — não precisava de GSAP pra
+uma barra que só cresce da esquerda pra direita. Quando tudo está completo, mostra os parabéns e
+o botão "Esconder" (guardado como `checklist_escondido`, mesmo mecanismo dos metadados).
+
+#### B4 — estados vazios
+
+`EstadoVazio.tsx`: ícone + título + descrição, com um botão de ação OPCIONAL — só adicionei o
+botão onde a ação de verdade fica em OUTRA tela (Horários, quando não há nenhum barbeiro: botão
+leva pra Barbeiros). Em Barbeiros/Serviços/Agenda, o formulário de cadastro já está bem ali na
+mesma tela, então o estado vazio ali é só ícone + mensagem, sem duplicar um botão pro que já está
+visível.
+
+#### B5 — como testar (e como eu testei)
+
+Criei a conta de teste pedida (`teste.tutorial@fluxobarber.test`, ver `PENDENCIAS.md` pra
+apagar) e testei o fluxo de ponta a ponta de verdade, clicando/navegando (não só lendo o
+código): cadastro → onboarding → Agenda mostrando o card do link, o checklist (0 de 5) e o tour
+abrindo sozinho no passo 1, com o nome da barbearia certo na frase de boas-vindas; avancei pro
+passo 2 e conferi o recorte dourado exatamente em volta do item "Barbeiros" do menu; pulei o
+tour e recarreguei a página — ele não voltou a aparecer sozinho; fui em Configurações, cliquei
+"Ver tutorial novamente" — voltou pra Agenda com o tour do passo 1 de novo; cadastrei um
+barbeiro de teste e voltei pra Agenda — o checklist atualizou sozinho pra "1 de 5", o item
+corresponde riscado; cliquei "Copiar link" — foi pra "2 de 5"; conferi os estados vazios de
+Barbeiros (antes de cadastrar) e da Agenda (sem agendamento no dia) — ícone, título e descrição
+certos; testei em 375px (via `<iframe>`, mesma técnica de sempre) — o tour acha o item certo do
+menu inferior, sem rolagem horizontal.
+
+**Pra você testar:** crie uma conta nova em `/cadastro` (local ou publicado — com a confirmação
+de email desligada, ela já nasce logada), crie uma barbearia no onboarding, e o tour deve abrir
+sozinho assim que a Agenda carregar. Teste pular, teste "Ver tutorial novamente" em
+Configurações, e vá cadastrando barbeiro/serviço/horário/agendamento aos poucos pra ver o
+checklist marcar cada item sozinho.
+
+**Sobre ver as animações rodando:** continuo sem conseguir, pelo mesmo motivo de sempre (aba em
+segundo plano nesta ferramenta — o GSAP trava no meio de qualquer tween). Dessa vez isso causou
+um efeito "em cascata" interessante de se explicar: como o `clearProps` de um passo nunca chega a
+rodar (porque a animação nunca termina de verdade), o próximo passo "herda" um resquício de
+transform do passo anterior, e o balão aparece visualmente deslocado nos prints que tirei. Conferi
+que isso é só da ferramenta e não um bug de verdade: extraí a posição (`top`/`left`) que o React
+calculou e bate exatamente com a fórmula esperada (testei com os números de verdade da tela) — o
+deslocamento visual nos prints vem só do `transform` "preso" por cima, que em um navegador de
+verdade (aba em primeiro plano, `requestAnimationFrame` rodando normal) nunca chega a acontecer,
+porque cada tween tem menos de 1 segundo e sempre termina antes do próximo passo começar.
+
 ---
 
 ## Nova rodada — correção dos bugs visuais da landing page (outubro de 2026)

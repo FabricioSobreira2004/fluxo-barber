@@ -1,7 +1,6 @@
 "use client"; // precisa do hook useActionState (só existe no navegador), por isso vira Client Component
 
 import { useActionState } from "react"; // liga um <form> a uma Server Action e guarda o resultado/erro entre tentativas
-import Link from "next/link"; // link pra abrir a página pública da barbearia
 import { Label } from "@/components/ui/Label"; // legenda dos campos do formulário
 import { Input } from "@/components/ui/Input"; // campo de texto estilizado
 import { Button } from "@/components/ui/Button"; // botão estilizado
@@ -10,7 +9,7 @@ import { Card } from "@/components/ui/Card"; // bloco de superfície que envolve
 import { atualizarBarbearia, type EstadoConfiguracoes } from "./actions"; // Server Action e o formato do estado dela
 import { type Tabelas } from "@/utils/supabase/database.types"; // tipos gerados do banco (ver PENDENCIAS.md)
 
-type Barbearia = Pick<Tabelas<"barbearias">, "id" | "nome" | "slug" | "telefone" | "endereco">; // só os campos que este formulário usa
+type Barbearia = Pick<Tabelas<"barbearias">, "id" | "nome" | "telefone" | "endereco">; // só os campos que este formulário usa ("slug" saiu daqui: agora mora só no card LinkBarbearia, lá em cima)
 
 const ESTADO_INICIAL: EstadoConfiguracoes = {}; // nenhuma mensagem antes do primeiro envio
 
@@ -21,17 +20,6 @@ export function FormularioConfiguracoes({ barbearia }: { barbearia: Barbearia })
     <Card className="max-w-xl">
       <form action={acao} className="flex flex-col gap-4"> {/* ao enviar, o React chama a Server Action automaticamente */}
         <input type="hidden" name="id" value={barbearia.id} /> {/* viaja junto no FormData, sem o usuário precisar ver */}
-
-        <div>
-          <Label>Endereço público</Label>
-          <Link
-            href={`/b/${barbearia.slug}`}
-            target="_blank" // abre em outra aba, pra não perder o formulário de configurações
-            className="text-sm text-dourado hover:text-dourado-claro"
-          >
-            /b/{barbearia.slug} {/* o slug em si não é editável aqui, pra não quebrar links já compartilhados */}
-          </Link>
-        </div>
 
         <div>
           <Label htmlFor="nome">Nome da barbearia</Label>

@@ -22,5 +22,5 @@ export async function obterBarbeariaAtual() {
     redirect("/onboarding");
   }
 
-  return { supabase, barbeariaId: membro.barbearia_id, userId: user.id }; // devolve tudo que as páginas do painel costumam precisar
+  return { supabase, barbeariaId: membro.barbearia_id, userId: user.id, user }; // devolve tudo que as páginas do painel costumam precisar ("user" inteiro: útil pra ler user_metadata, ex: se já viu o tutorial)
 }
