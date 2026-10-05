@@ -63,10 +63,11 @@ export function Beneficios() { // grade de 4 cards que aparecem um a um conforme
         // só anima se o usuário NÃO pediu movimento reduzido; senão os cards aparecem direto, parados
         gsap.from(".card-beneficio", {
           autoAlpha: 0, // começa invisível (autoAlpha também evita cliques acidentais antes de aparecer)
-          y: 28, // e um pouco abaixo da posição final
-          duration: 0.6,
+          y: 48, // e bem mais abaixo da posição final (antes era 28px — deslize maior, mais perceptível)
+          scale: 0.95, // começa levemente menor e cresce até o tamanho final, reforçando a entrada
+          duration: 0.7,
           ease: "power2.out",
-          stagger: 0.15, // um card aparece pouco depois do outro, em vez de todos juntos
+          stagger: 0.2, // um card aparece um pouco mais depois do outro (antes era 0.15), pra dar tempo de notar cada um
           scrollTrigger: {
             trigger: gradeRef.current,
             start: "top 85%", // dispara quando o topo da grade chega perto do fim da área visível da tela
@@ -85,7 +86,7 @@ export function Beneficios() { // grade de 4 cards que aparecem um a um conforme
       {beneficios.map(({ Icone, titulo, descricao }) => (
         <div
           key={titulo}
-          className="card-beneficio group rounded-xl border border-borda bg-superficie p-6" // "group" liga o hover do ícone lá dentro
+          className="card-beneficio group rounded-xl border border-borda bg-superficie p-6 motion-safe:transition-[transform,border-color] motion-safe:duration-300 motion-safe:hover:-translate-y-1.5 motion-safe:hover:border-dourado/70" // "group" liga o hover do ícone lá dentro; no hover o card sobe um pouco e a borda fica dourada
         >
           <Icone
             className="mb-3 h-8 w-8 text-dourado motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-110 motion-safe:group-hover:drop-shadow-[0_0_6px_rgba(224,192,104,0.7)]" // brilho + leve aumento no hover; "motion-safe:" some inteiro pra quem pediu movimento reduzido

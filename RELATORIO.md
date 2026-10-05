@@ -89,6 +89,62 @@ Esta rodada teve 3 partes independentes, cada uma com seu próprio commit.
   ver a animação de entrada rodando ao vivo, pelo mesmo motivo já explicado
   na rodada anterior (aba em `visibilityState: "hidden"` nessa ferramenta).
 
+### Parte 3 — animações mais marcantes
+
+**Arquivos alterados:** `components/landing/Hero.tsx`, `components/landing/Beneficios.tsx`,
+`components/landing/ComoFunciona.tsx`, `components/ui/Destaque.tsx`, `components/ui/PosteBarbeiro.tsx`
+
+- **Título:** em vez de um `<span>` só, cada palavra ("Agendamento", "simples", "para", "barbearias")
+  virou seu próprio `<span>` e entra com deslize de 40px e fade, uma depois da outra — total de
+  ≈0,8s. Não usei o plugin **SplitText** (ele é gratuito desde a aquisição do GSAP pela Webflow,
+  conferi isso antes de decidir) porque o texto é fixo e curto: separar as 4 palavras na mão é mais
+  simples e mais leve que rodar um plugin de split em tempo de execução.
+- **Brilho na palavra "barbearias":** uma faixa clara e inclinada (`<span>` decorativo, só
+  `background` + `transform`), dentro de um contêiner com `overflow: hidden`, desliza uma vez só da
+  esquerda pra direita por cima da palavra, logo que ela termina de aparecer.
+- **Realce do subtítulo:** as 3 frases em dourado (`agendam sozinhos`, `24 horas por dia`, `sem
+  horário duplicado`) dão um pequeno "pop" (escala de 0,85 até 1, com uma leve "molejada") pouco
+  depois que o parágrafo já está visível — chama atenção sem precisar mudar de cor nem depender de
+  nada além de `transform`/`opacity`.
+- **Cards:** deslize de entrada maior (28px → 48px) e ganharam uma leve escala (de 0,95 até 1,0),
+  com mais espaço entre a entrada de um card e outro. No hover, o card sobe um pouco
+  (`translateY`) e a borda vira dourada — tudo dentro de `motion-safe:`, então some por completo
+  pra quem pediu movimento reduzido.
+- **"Como funciona":** virou Client Component. Os 3 números entram em sequência com uma leve
+  "molejada" (`back.out`), e a linha dourada entre eles "se desenha" da esquerda pra direita ao
+  mesmo tempo — isso é só `scaleX` de 0 até 1 com `transform-origin` na esquerda (não usei nenhum
+  plugin de SVG tipo DrawSVG porque a linha já era uma `<div>` simples, não um `<path>`; `scaleX`
+  faz o mesmo efeito visual gastando bem menos).
+- **Poste do logo:** mesma animação de antes, só que mais rápida (3s → 1,6s por volta completa) —
+  continua linear (`ease: "none"`) e suave, só perceptível mais rápido.
+- Todas as animações continuam só `transform`/`opacity` (a única exceção, como já era antes, é o
+  giro do poste, que mexe num atributo de `<pattern>` de SVG dentro de `<defs>` — não participa do
+  layout, não dispara reflow) e continuam inteiras dentro do
+  `gsap.matchMedia("(prefers-reduced-motion: no-preference)", ...)` de cada componente.
+
+**O que observar ao recarregar (`Ctrl+Shift+R` em `http://localhost:3000`), nesta ordem:**
+
+1. **Logo, no topo:** as listras do poste já estão girando desde o primeiro frame — repare que
+   agora é visivelmente mais rápido que antes (uma volta a cada ~1,6s).
+2. **Título:** as 4 palavras sobem e aparecem uma depois da outra ("Agendamento", "simples",
+   "para", "barbearias") — o movimento todo dura menos de 1 segundo.
+3. **Logo em seguida**, um brilho claro atravessa a palavra **"barbearias"**, uma vez só, da
+   esquerda pra direita.
+4. **Quase junto com o brilho**, o subtítulo aparece (fade + sobe de baixo), seguido pelos 2
+   botões ("Criar conta gratuita" / "Já tenho conta"), um logo depois do outro.
+5. **Por último nessa sequência**, as 3 frases douradas do subtítulo dão um pequeno "pop" — um
+   realce rápido, quase no fim de toda a entrada.
+6. **Role a página até os 4 cards:** cada um sobe de mais longe que antes e cresce levemente
+   (começa um pouco menor) — dá pra notar mais o efeito "um de cada vez" que antes.
+7. **Passe o mouse sobre um card:** ele sobe um pouquinho e a borda vira dourada.
+8. **Role até "Como funciona":** os números 1, 2 e 3 aparecem em sequência (com uma leve
+   "molejada"), e repare a linha dourada entre eles — ela cresce da esquerda pra direita ao mesmo
+   tempo, como se estivesse sendo desenhada.
+9. **Pra conferir o "movimento reduzido":** ative essa opção no sistema (Windows: Configurações →
+   Acessibilidade → Efeitos visuais → "Mostrar animações no Windows" desligado) e recarregue —
+   título, subtítulo, cards e passos devem aparecer **direto no estado final, sem nenhuma
+   animação**, e o poste do logo deve ficar **parado**.
+
 ---
 
 ## Nova rodada — animações GSAP na landing page (outubro de 2026)

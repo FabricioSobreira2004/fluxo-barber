@@ -7,6 +7,8 @@ interface PropriedadesDestaque { // o que o componente Destaque recebe
 
 // trecho de texto em dourado e semi-negrito, usado pra chamar atenção pra palavras-chave
 // dentro de frases maiores (subtítulo do hero, descrição dos cards de benefício etc.)
+// "inline-block": continua fluindo junto com o resto do parágrafo, mas passa a aceitar
+// transform (scale) — é o que permite o GSAP dar o "pop" de realce no subtítulo do hero.
 export function Destaque({ children, className = "" }: PropriedadesDestaque) {
-  return <strong className={`font-semibold text-dourado ${className}`}>{children}</strong>;
+  return <strong className={`inline-block font-semibold text-dourado ${className}`}>{children}</strong>;
 }

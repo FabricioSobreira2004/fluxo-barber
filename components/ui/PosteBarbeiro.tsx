@@ -35,7 +35,7 @@ export function PosteBarbeiro({ variante = VARIANTE_PADRAO, animado = false, ...
       // e o efeito é uma listra girando sem parar, de forma contínua e suave
       gsap.to(listrasRef.current, {
         attr: { x: 16, y: 16 },
-        duration: 3,
+        duration: 1.6, // antes era 3s — giro bem mais perceptível, mas ainda suave (não é um "piscar")
         ease: "none", // velocidade constante, igual a um poste de barbeiro de verdade (sem acelerar/desacelerar)
         repeat: -1, // repete pra sempre
       });

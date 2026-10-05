@@ -9,10 +9,13 @@ import { Destaque } from "@/components/ui/Destaque"; // trecho de texto em doura
 
 gsap.registerPlugin(useGSAP); // registra o hook antes de usar (exigido pelo GSAP)
 
+// palavras do título antes da palavra em destaque, uma por uma — pra cada uma virar um <span> animável
+// (não usei o plugin SplitText aqui porque o texto é fixo e curto: separar na mão é mais simples e mais leve)
+const PALAVRAS_TITULO = ["Agendamento", "simples", "para"];
+
 export function Hero() { // bloco de destaque (hero) da landing page: título, subtítulo e botões, com animação de entrada
   const secaoRef = useRef<HTMLElement>(null); // raiz da seção: limita onde o GSAP procura elementos (escopo)
-  const tituloRef = useRef<HTMLHeadingElement>(null); // só existe um título, por isso uma ref direta já basta
-  const subtituloRef = useRef<HTMLParagraphElement>(null); // idem, só existe um parágrafo de subtítulo
+  const subtituloRef = useRef<HTMLParagraphElement>(null); // só existe um parágrafo de subtítulo, por isso uma ref direta já basta
 
   useGSAP(
     () => {
@@ -21,16 +24,30 @@ export function Hero() { // bloco de destaque (hero) da landing page: título, s
       mm.add("(prefers-reduced-motion: no-preference)", () => {
         // esta função só roda se o usuário NÃO pediu movimento reduzido no sistema operacional;
         // se pediu, a timeline nunca é criada e os elementos aparecem direto no estado final (estático)
-        const tl = gsap.timeline({ defaults: { ease: "power2.out", duration: 0.7 } }); // sequência: título -> subtítulo -> botões
+        const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
-        tl.from(tituloRef.current, { autoAlpha: 0, y: 28 }) // título: fade + leve deslize de baixo pra cima
-          .from(subtituloRef.current, { autoAlpha: 0, y: 22 }, "-=0.45") // subtítulo começa antes do título terminar, pra ficar em sequência suave
-          .from(".botao-cta", { autoAlpha: 0, y: 16, stagger: 0.12 }, "-=0.3"); // os 2 botões entram logo depois, um após o outro
+        tl.from(".palavra-titulo", { autoAlpha: 0, y: 40, duration: 0.6, stagger: 0.07 }) // palavra por palavra, de baixo pra cima (total ≈0,8s)
+          .addLabel("tituloPronto") // marca o momento em que a última palavra termina de entrar
+          .fromTo( // brilho dourado passando uma vez só por cima da palavra "barbearias"
+            ".brilho-titulo",
+            { xPercent: -150 }, // começa fora da palavra, à esquerda
+            { xPercent: 150, duration: 0.9, ease: "power1.inOut" }, // atravessa e sai do outro lado; "overflow-hidden" no span pai corta o que passa da borda
+            "tituloPronto"
+          )
+          .from(subtituloRef.current, { autoAlpha: 0, y: 22, duration: 0.7 }, "tituloPronto+=0.1") // subtítulo entra logo depois do título
+          .from(".botao-cta", { autoAlpha: 0, y: 16, duration: 0.7, stagger: 0.12 }, "-=0.3") // os 2 botões entram em seguida, um após o outro
+          .from(".destaque-subtitulo", { // palavras em destaque do subtítulo: um "pop" sutil, depois que o texto já está visível
+            autoAlpha: 0.4, // não starta 100% invisível — o texto já apareceu junto com o resto do parágrafo, isso é só um realce
+            scale: 0.85,
+            duration: 0.4,
+            stagger: 0.1,
+            ease: "back.out(1.8)", // dá uma leve "molejada" no final, chamando atenção sem exagerar
+          }, "-=0.15");
       });
 
       return () => mm.revert(); // desfaz a animação e para de escutar a media query quando o componente sai da tela
     },
-    { scope: secaoRef } // ".botao-cta" só é buscado dentro desta seção, nunca em outra parte da página
+    { scope: secaoRef } // seletores (".palavra-titulo", ".botao-cta" etc.) só são buscados dentro desta seção
   );
 
   return (
@@ -38,8 +55,20 @@ export function Hero() { // bloco de destaque (hero) da landing page: título, s
       ref={secaoRef}
       className="flex flex-1 flex-col items-center gap-6 px-6 py-16 text-center md:py-24" // seção de destaque (hero)
     >
-      <h1 ref={tituloRef} className="font-display text-4xl font-bold leading-tight text-texto md:text-6xl">
-        Agendamento simples para <span className="text-dourado">barbearias</span> {/* palavra-chave em dourado */}
+      <h1 className="font-display text-4xl font-bold leading-tight text-texto md:text-6xl">
+        {PALAVRAS_TITULO.map((palavra) => ( // cada palavra do título vira seu próprio <span>, pra poder animar uma por uma
+          <span key={palavra} className="palavra-titulo inline-block">
+            {palavra}{" "}
+          </span>
+        ))}
+        {/* palavra em destaque: "relative overflow-hidden" recorta o brilho que passa por cima dela */}
+        <span className="palavra-titulo relative inline-block overflow-hidden text-dourado">
+          barbearias
+          <span
+            className="brilho-titulo pointer-events-none absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/80 to-transparent" // faixa clara e inclinada, que o GSAP desliza por cima da palavra
+            aria-hidden // puramente decorativo, não tem texto nenhum
+          />
+        </span>
       </h1>
       <p ref={subtituloRef} className="max-w-2xl text-lg text-texto/90 md:text-xl"> {/* "text-texto/90": branco suave, mais legível que o cinza de antes */}
         Chega de perder tempo no WhatsApp marcando horário. Com o Fluxo Barber, seus clientes{" "}
