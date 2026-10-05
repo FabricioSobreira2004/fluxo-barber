@@ -9,7 +9,10 @@ import { ChamadaFinal } from "@/components/landing/ChamadaFinal"; // chamada fin
 
 export default function Home() { // landing page pública: primeira tela que um visitante vê
   return (
-    <main className="flex min-h-screen flex-col">
+    // "overflow-x-hidden" só aqui na landing page (não no body inteiro): é uma rede de segurança contra
+    // qualquer animação (deslize, escala) que arredonde mal e empurre 1px pra fora da tela, causando
+    // rolagem horizontal. Não afeta o scroll vertical nem o ScrollTrigger, que só olham pro eixo Y.
+    <main className="flex min-h-screen flex-col overflow-x-hidden">
       <header className="flex items-center justify-between gap-2 px-4 py-5 sm:px-6 md:px-12"> {/* topo com logo e ações de conta */}
         <Logo className="text-lg sm:text-2xl" animado /> {/* menor no celular; "animado" liga o giro das listras só aqui */}
         <nav className="flex items-center gap-2 sm:gap-3">

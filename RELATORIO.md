@@ -10,6 +10,98 @@ rodada em "Concluído", "Para fazer agora" e "Pré-lançamento".
 
 ---
 
+## Nova rodada — correção dos bugs visuais da landing page (outubro de 2026)
+
+Você testou a rodada anterior e encontrou 6 bugs visuais, mais um pedido de revisão geral de
+alinhamento/espaçamento. Corrigi tudo num commit só (não dava pra separar em partes como da última
+vez — os bugs se sobrepõem nos mesmos arquivos).
+
+**Arquivos alterados:** `components/landing/Hero.tsx`, `components/landing/Beneficios.tsx`,
+`components/landing/ComoFunciona.tsx`, `components/landing/ChamadaFinal.tsx`, `app/page.tsx`
+
+### 1. Título sem espaços ("Agendamentosimplespara barbearias")
+A causa: eu colocava o espaço como texto DENTRO de cada `<span>` de palavra (`{palavra}{" "}`) —
+isso esbarra num detalhe de CSS pouco conhecido: espaço em branco bem no FINAL de uma caixa
+`inline-block` pode ser descartado pelo navegador (ele é tratado como "fim de linha", que some).
+**Correção:** troquei pra um `<span>` em `inline-flex` com `gap-x-[0.28em]` entre as palavras — um
+espaçamento de verdade, via layout, que nunca depende de caractere de texto nem pode ser descartado.
+**Acessibilidade:** o `<h1>` ganhou `aria-label="Agendamento simples para barbearias"` (a frase
+inteira, de uma vez) e o conteúdo visual (as palavras separadas pra animar) ganhou `aria-hidden` —
+assim o leitor de tela lê a frase normal, em vez de tentar ler cada `<span>` struct separado.
+
+### 2. "barbearias" desalinhada (mais alta que as outras palavras)
+A causa: a palavra em destaque tem `overflow-hidden` (preciso disso pra recortar o brilho que passa
+por cima dela) — só que, por uma regra específica de CSS, um `inline-block` com `overflow` diferente
+de `visible` deixa de se alinhar pela BASE DO TEXTO e passa a se alinhar pela base da própria caixa.
+Como só essa palavra tinha `overflow-hidden`, só ela ficava deslocada. **Correção:** troquei o
+alinhamento das palavras de "base de texto" (`inline-block` dentro de texto corrido) pra
+`items-center` dentro do `inline-flex` do ponto 1 — isso não depende de baseline nenhuma, então o
+`overflow-hidden` deixou de causar qualquer diferença.
+
+### 3. Cards em alturas e posições diferentes depois da animação
+Duas causas, corrigidas as duas:
+- A animação de entrada não tinha `clearProps`, então o GSAP podia deixar resíduo de `transform`/
+  `opacity` no estilo inline depois de terminar. Adicionei `clearProps: "all"` — ao terminar, o GSAP
+  agora APAGA esse estilo inline e devolve o controle 100% pro CSS (`y: 0`, `scale: 1`, `opacity: 1`
+  "de verdade", não só numericamente parecido).
+- Os 4 cards não tinham garantia de altura igual. Adicionei `items-stretch` explícito na grade e
+  `h-full flex flex-col` em cada card — agora todos os cards de uma mesma linha ficam com a mesma
+  altura (conferido: 230px os 4, lado a lado, em telas largas), com o conteúdo alinhado ao topo.
+  **Nota:** no celular (1 coluna), é esperado que os cards tenham alturas diferentes entre si — cada
+  um é a única coisa na própria linha, então a altura segue o tamanho do texto de cada descrição;
+  isso não é bug, só não se aplica "mesma altura" quando não há mais de 1 card por linha.
+- Apliquei o mesmo `clearProps: "all"` nos números do "Como funciona" e na linha dourada, pelo mesmo
+  motivo (consistência e segurança).
+
+### 4. Rolagem horizontal em algumas larguras
+Adicionei `overflow-x-hidden` no `<main>` da landing page (`app/page.tsx`) — só nessa página, não no
+`<body>` inteiro (pra não arriscar quebrar nada em outras páginas) — como rede de segurança contra
+qualquer sobra de pixel que uma animação (deslize/escala) empurre pra fora da tela. Como isso só
+mexe no eixo X, não afeta o scroll vertical nem o ScrollTrigger (que só olham pro eixo Y). Testei nas
+4 larguras pedidas (375, 768, 1280, 1440px) e não há rolagem horizontal em nenhuma.
+
+### 5. Números do "Como funciona" na fonte errada
+Trocei a fonte dos números de 1/2/3 de `font-display` (Playfair — fonte de título, com algarismos de
+alturas variadas) pra `font-sans` (Inter — fonte de texto) com `tabular-nums` (todos os algarismos
+com a mesma largura) e `leading-none` (sem sobra de altura de linha empurrando o número pro lado).
+
+### 6. Palavra sozinha na última linha
+Adicionei `text-balance` no `<h1>`, no subtítulo do hero, e nos títulos ("Como funciona" e na
+chamada final); e `text-pretty` nos parágrafos dos cards de benefício — são as duas utilidades do
+Tailwind pra `text-wrap: balance` e `text-wrap: pretty`.
+
+### Bug extra que encontrei ao validar o "prefers-reduced-motion" (não estava na sua lista)
+Com movimento reduzido ativado, a timeline do GSAP nunca é criada — e o brilho do título (que recorta
+e desliza por cima da palavra "barbearias") não tinha nenhuma posição de descanso definida em CSS
+puro. Resultado: pra quem pede movimento reduzido, a faixa clara do brilho ficaria **parada bem em
+cima da palavra**, pra sempre, em vez de nunca aparecer. Corrigi adicionando `-translate-x-[150%]`
+como classe Tailwind estática (a posição "fora da tela", por CSS, sem depender do GSAP rodar).
+
+### Revisão geral de alinhamento e espaçamento
+- Todas as seções (cards, "Como funciona", chamada final) passaram a usar o mesmo ritmo vertical
+  (`py-16 md:py-20`) e a mesma largura máxima/alinhamento (`mx-auto max-w-6xl`).
+- O hero ficou com menos espaço embaixo (`pb-8 md:pb-10`, em vez do mesmo `py-16 md:py-24` de cima
+  pra baixo) — o vazio entre os botões e os cards diminuiu bastante.
+- Os 3 passos do "Como funciona" já ficavam alinhados entre si (os círculos sempre no topo da coluna,
+  o texto centralizado embaixo) — conferi e não precisou mudar nada aí além da fonte dos números.
+
+### Como validei (sem conseguir ver a animação rodando ao vivo)
+Como a ferramenta de navegador que uso continua sem conseguir reproduzir a animação (a aba fica em
+segundo plano, o `requestAnimationFrame` do GSAP não dispara), usei a abordagem que você sugeriu,
+adaptada: em vez de chamar `timeline.progress(1)` (o GSAP não fica exposto em `window` no bundle),
+simulei o **estado final de verdade** removendo o `style` inline de cada elemento animado via
+JavaScript — que é exatamente o que o `clearProps: "all"` novo faz de verdade quando a animação
+termina. Carreguei a página dentro de um `<iframe>` com largura fixa (375, 768, 1280 e 1440px — como
+minha ferramenta não consegue redimensionar a janela de verdade, isso simula cada largura porque as
+media queries do Tailwind reagem à largura do iframe) e conferi, em cada uma: nenhuma rolagem
+horizontal: espaço entre as palavras do título (17px, igual nas 4 palavras, em telas largas);
+topo de cada palavra do título na mesma altura (inclusive "barbearias"); altura dos cards igual
+dentro de cada linha (230px os 4, em telas largas; 210/210 e 190/190 nas duas linhas de 2 colunas,
+em tablet); fonte dos números = Inter. Também recriei a estrutura do brilho do título isolada (sem
+GSAP) pra confirmar que a posição de descanso por CSS realmente fica fora da área visível da palavra.
+
+---
+
 ## Nova rodada — link de confirmação, copy de vendas e animações mais fortes (outubro de 2026)
 
 Esta rodada teve 3 partes independentes, cada uma com seu próprio commit.

@@ -68,6 +68,7 @@ export function Beneficios() { // grade de 4 cards que aparecem um a um conforme
           duration: 0.7,
           ease: "power2.out",
           stagger: 0.2, // um card aparece um pouco mais depois do outro (antes era 0.15), pra dar tempo de notar cada um
+          clearProps: "all", // ao terminar, remove o style inline (opacity/transform) — garante que os 4 cards acabem exatamente iguais (y:0, scale:1), sem nenhum resíduo de arredondamento
           scrollTrigger: {
             trigger: gradeRef.current,
             start: "top 85%", // dispara quando o topo da grade chega perto do fim da área visível da tela
@@ -82,20 +83,28 @@ export function Beneficios() { // grade de 4 cards que aparecem um a um conforme
   );
 
   return (
-    <section ref={gradeRef} className="grid gap-6 px-6 py-16 md:grid-cols-2 md:px-12 lg:grid-cols-4">
-      {beneficios.map(({ Icone, titulo, descricao }) => (
-        <div
-          key={titulo}
-          className="card-beneficio group rounded-xl border border-borda bg-superficie p-6 motion-safe:transition-[transform,border-color] motion-safe:duration-300 motion-safe:hover:-translate-y-1.5 motion-safe:hover:border-dourado/70" // "group" liga o hover do ícone lá dentro; no hover o card sobe um pouco e a borda fica dourada
-        >
-          <Icone
-            className="mb-3 h-8 w-8 text-dourado motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-110 motion-safe:group-hover:drop-shadow-[0_0_6px_rgba(224,192,104,0.7)]" // brilho + leve aumento no hover; "motion-safe:" some inteiro pra quem pediu movimento reduzido
-            aria-hidden // ícone decorativo; o título do card já explica o conteúdo
-          />
-          <h3 className="mb-2 font-display text-lg font-semibold text-texto">{titulo}</h3>
-          <p className="text-sm text-texto/80">{descricao}</p> {/* "text-texto/80": mais claro que o cinza de antes, mantendo o título em destaque */}
-        </div>
-      ))}
+    // "py-16 md:py-20": mesmo ritmo vertical das outras seções da página (Como funciona, Chamada final)
+    <section ref={gradeRef} className="px-6 py-16 md:px-12 md:py-20">
+      {/* "mx-auto max-w-6xl": mesma largura máxima e mesmo alinhamento das outras seções.
+          "items-stretch" (redundante com o padrão do grid, mas explícito): garante que os 4 cards
+          fiquem com a MESMA altura na mesma linha, mesmo quando o texto de um é maior que o outro */}
+      <div className="mx-auto grid max-w-6xl items-stretch gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {beneficios.map(({ Icone, titulo, descricao }) => (
+          <div
+            key={titulo}
+            // "h-full flex flex-col": o card preenche toda a altura da célula do grid (que já é igual
+            // pra todos, graças ao "items-stretch" acima) e o conteúdo fica alinhado ao topo (padrão do flex-col)
+            className="card-beneficio group flex h-full flex-col rounded-xl border border-borda bg-superficie p-6 motion-safe:transition-[transform,border-color] motion-safe:duration-300 motion-safe:hover:-translate-y-1.5 motion-safe:hover:border-dourado/70"
+          >
+            <Icone
+              className="mb-3 h-8 w-8 text-dourado motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-110 motion-safe:group-hover:drop-shadow-[0_0_6px_rgba(224,192,104,0.7)]" // brilho + leve aumento no hover; "motion-safe:" some inteiro pra quem pediu movimento reduzido
+              aria-hidden // ícone decorativo; o título do card já explica o conteúdo
+            />
+            <h3 className="mb-2 font-display text-lg font-semibold text-texto">{titulo}</h3>
+            <p className="text-pretty text-sm text-texto/80">{descricao}</p> {/* "text-texto/80": mais claro que o cinza de antes; "text-pretty": evita linha curta e feia no fim do parágrafo */}
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
