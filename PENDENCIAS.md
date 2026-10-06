@@ -43,6 +43,16 @@ ser feito perto do lançamento de verdade pra clientes pagantes.
 
 ## 🔧 Para fazer agora
 
+### Confirmar visualmente os 4 itens da rodada "Faturamento premium + Agenda sem confirmação manual"
+
+Eu não tenho a senha de nenhuma conta de teste existente (ex:
+`teste.faturamento@fluxobarber.test`, logo abaixo) e não quis criar uma
+conta nova sozinho sem perguntar — por isso só validei esta rodada por
+`npm run lint` + `npm run build` e, pros filtros do Faturamento, um script
+isolado rodando a mesma lógica de datas (detalhes em `TESTES.md`). Pedido:
+dê uma olhada visual nos 4 itens antes de considerar a rodada fechada —
+o roteiro específico de cada um está na seção correspondente de `TESTES.md`.
+
 ### Apagar a conta de teste da rodada do Faturamento
 
 Pra testar a Agenda (troca de status, cache de dias) e a nova tela de

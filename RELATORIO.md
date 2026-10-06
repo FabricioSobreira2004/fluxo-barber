@@ -10,6 +10,132 @@ rodada em "Concluído", "Para fazer agora" e "Pré-lançamento".
 
 ---
 
+## Nova rodada — Faturamento premium + Agenda sem confirmação manual (outubro de 2026)
+
+Rodada com 4 tarefas independentes, cada uma com seu próprio commit (`git log`
+tem o detalhe técnico de cada uma). Nenhum SQL novo foi rodado no banco (não
+havia nenhum pedido nessa rodada). Resumo de cada tarefa, pra você revisar:
+
+### 1 — Faturamento: destaque dourado premium nos cards
+
+Os 5 cards do topo do Faturamento eram todos cinza — sem nenhum destaque,
+bem abaixo do acabamento "premium" da landing page. Reaproveitei a mesma
+identidade dourada dos cards de benefício da landing (`card-beneficio`, em
+`components/landing/Beneficios.tsx`): borda dourada sutil, um brilho suave
+(círculo borrado no canto, fixo, sem precisar de animação) e hover elegante
+(leve deslize pra cima + borda mais forte, protegido por `motion-safe:`).
+
+`CardsResumo.tsx` agora separa o card "Faturamento realizado" como **card
+principal**: largura cheia, numa linha própria acima dos outros, com o
+círculo do ícone maior e o número em dourado (único número em dourado da
+tela — reforça que é O número principal). Os outros 4 cards ficam numa
+segunda fileira (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`), com a mesma
+identidade visual, só mais discreta. A contagem animada via GSAP (que já
+existia) continua funcionando igual, só mudou o layout em volta dela.
+
+### 2 — Faturamento: números com algarismos alinhados e de largura fixa
+
+Os números (R$ 2.725,00, 57, 16,2%, 09h) usavam `font-display` (Playfair —
+a fonte serifada de título), que tem algarismos "antigos" (oldstyle, de
+alturas diferentes) — ficavam com aparência estranha, e sem `tabular-nums`
+"pulavam" de largura a cada frame da contagem animada. Essa mesma correção
+já tinha sido feita nos números do "Como funciona" da landing numa rodada
+anterior (`font-sans` + `tabular-nums`); desta vez estendi pra **todo
+número do site**: troquei `font-display` por `font-sans` nos 2 lugares que
+ainda usavam a fonte errada (cards de Faturamento e "Horário mais
+movimentado"), e adicionei `lining-nums` (algarismos alinhados, sem o
+estilo "antigo") ao lado de todo `tabular-nums` já existente — preços na
+Agenda, duração/preço em Serviços, horários em Horários, o contador "X de Y"
+do checklist e do tour, os números do "Como funciona", etc.
+
+### 3 — Faturamento: filtro de 30 dias, padrão e comparações justas
+
+- Novo filtro **"30 dias"**, na ordem pedida: Hoje, 7 dias, 30 dias, Este
+  mês, Mês passado, Personalizado (`app/painel/faturamento/periodo.ts` e
+  `SeletorPeriodo.tsx`, que já desenha os chips a partir dessa lista).
+- **"30 dias" passou a ser o padrão** ao abrir a página (antes era "Hoje",
+  que costuma estar quase vazio e dava uma primeira impressão ruim).
+- Corrigi 2 comparações com o período anterior que não eram justas:
+  - **"Hoje"** comparava com "ontem" — se ontem for um dia que a barbearia
+    fica fechada (ex: segunda), a comparação mostraria uma queda de ~100%
+    sem significar nada. Agora compara com o **mesmo dia da semana da
+    semana passada** (terça com a terça passada).
+  - **"Este mês"** comparava o mês atual (só os dias já passados, já que o
+    gráfico não mostra o futuro) com o **mês anterior inteiro** — por
+    exemplo, hoje (dia 6) compararia 6 dias de outubro com setembro
+    inteiro (30 dias), o que gerava uma queda falsa gigante (tipo -78%,
+    exatamente o exemplo que você deu). Agora compara só os **mesmos N
+    dias corridos** do mês anterior (01–06/10 vs 01–06/09).
+  - "7 dias", "30 dias", "Mês passado" e "Personalizado" já comparavam de
+    forma justa (mesma duração dos dois lados) e não precisaram de ajuste.
+- Quando o período anterior não tem **nenhum** dado, o texto agora é
+  exatamente "Sem dados do período anterior" (cinza, sem seta) — era "Sem
+  período anterior pra comparar"; o cálculo que decide "sem dado" não
+  mudou (`calcularVariacaoPercentual` já tratava "anterior = 0" assim).
+- O gráfico nunca mais mostra dias futuros vazios: em "Este mês", ele vai
+  só até **hoje**, mesmo que o período continue até o fim do mês por
+  dentro (isso é de propósito, pra "Previsto" continuar contando os
+  agendamentos futuros já marcados pro resto do mês — só o GRÁFICO foi
+  limitado, não a consulta).
+- Quando o período é de **1 dia** (hoje, ou "Personalizado" com De = Até),
+  o gráfico troca pra **"Faturamento por horário"** (24 barras, uma por
+  hora do dia — novo componente `GraficoFaturamentoPorHora.tsx`, mesma
+  técnica de animação do gráfico por dia) e o indicador "Dia da semana
+  mais movimentado" desaparece (não faz sentido quando o período já é só 1
+  dia; fica só "Horário mais movimentado").
+
+**Como validei a lógica de datas** (sem conseguir abrir o Faturamento de
+verdade no navegador — ver a seção de testes, `TESTES.md`): reescrevi as
+mesmas funções de `periodo.ts` num script Node isolado e conferi o
+resultado pros 4 casos corrigidos, com "hoje" = terça-feira 2026-10-06:
+"Hoje" comparou com 2026-09-29 (terça passada, certo); "Este mês" comparou
+01–06/10 com 01–06/09 (6 dias dos dois lados, certo); "30 dias" comparou
+07/09–06/10 com 08/08–06/09 (30 dias contínuos dos dois lados, sem buraco
+nem sobreposição); "Mês passado" comparou setembro inteiro com agosto
+inteiro (não tinha mudado, só confirmei que continua certo).
+
+### 4 — Agenda: fluxo de status sem confirmação manual
+
+Na prática a barbearia não confirma manualmente um agendamento — o cliente
+(pela página pública) ou o próprio dono (pelo painel) já reservam o
+horário direto como "agendado", e é isso. O fluxo antigo (precisar clicar
+em "Confirmar" antes de poder "Concluir"/"Faltou") não refletia como o
+produto é usado de verdade.
+
+- Removi o botão **"Confirmar"** de `BotoesStatus.tsx`. Agora "agendado" e
+  "confirmado" têm exatamente as mesmas 3 ações: Concluir, Faltou,
+  Cancelar.
+- "Agendado" e "Confirmado" aparecem **visualmente idênticos** (mesma cor
+  dourada, mesma etiqueta "Agendado" — `utils/status-agendamento.ts`). O
+  status `confirmado` **não foi removido do banco**: continua existindo,
+  reservado pro futuro lembrete por WhatsApp em que o próprio cliente
+  confirma (aí sim vai fazer sentido diferenciar os dois de novo).
+- "Concluir" e "Faltou" agora só **habilitam a partir do horário de início**
+  do agendamento — antes disso, só "Cancelar" fica disponível, com uma
+  dica (`title`, aparece no hover) "Disponível a partir das 14:00" no botão
+  desabilitado. Isso evita marcar por engano um horário que ainda nem
+  aconteceu. Implementei com um `useEffect` + `setTimeout` pro próprio
+  instante de início (não um relógio "vivo" reconferindo a cada segundo) —
+  os botões se liberam sozinhos, sem precisar recarregar a página.
+- Ajustei o texto do tour que mencionava "confirmar" (`components/painel/Tour.tsx`).
+  O Faturamento já tratava "agendado" + "confirmado" juntos como "Previsto"
+  antes desta rodada (`agregacoes.ts`) — não precisou mudar.
+
+### Como testei esta rodada
+
+`npm run lint` e `npm run build` passaram sem erro antes de cada um dos 4
+commits (igual peço sempre). A lógica pura de datas do item 3 foi conferida
+num script isolado (ver acima). **O que eu NÃO consegui testar**: abrir as
+telas de Faturamento e Agenda de verdade no navegador — não tenho a senha
+de nenhuma conta de teste existente (ex: `teste.faturamento@fluxobarber.test`,
+citada em `PENDENCIAS.md`) e não quis criar uma conta nova sozinho sem te
+perguntar. Por favor, dê uma olhada visual nos 4 itens (principalmente os
+cards dourados em 375px e desktop, e os botões da Agenda antes/depois do
+horário de início) antes de considerar esta rodada fechada — ver o roteiro
+de testes em `TESTES.md`.
+
+---
+
 ## Nova rodada — 5 correções e a tela de Faturamento (outubro de 2026)
 
 Rodada com 5 tarefas independentes, cada uma com seu próprio commit (`git log`

@@ -388,3 +388,58 @@ aparelho de verdade quando puder.
   errado — só ganhou a correção do ícone/padding também.
 - `app/b/[slug]/FormularioAgendamentoPublico.tsx` (data, página pública):
   mesmo padrão de campo em largura total — sem risco do bug de layout.
+
+## Testes — Faturamento premium + Agenda sem confirmação manual (outubro de 2026)
+
+Nos 4 itens desta rodada, rodei `npm run lint` e `npm run build` antes de
+cada um dos 4 commits — os dois passaram sem erro nas 4 vezes (único erro
+que apareceu no meio do caminho: a regra `react-hooks/purity` reclamou de eu
+chamar `Date.now()` direto no corpo do componente em `BotoesStatus.tsx`;
+corrigi movendo pra dentro de um `useEffect` antes de comitar).
+
+**Limitação importante: não consegui abrir o Faturamento nem a Agenda de
+verdade no navegador nesta rodada.** Existem contas de teste já cadastradas
+(`teste.faturamento@fluxobarber.test`, citada em `PENDENCIAS.md`), mas eu
+não tenho a senha delas, e não quis criar uma conta nova sozinho sem
+perguntar antes. Por isso, o que valido abaixo é só o que dá pra conferir
+sem abrir o navegador — layout e classes CSS por leitura de código, e a
+lógica pura de datas, rodada de verdade:
+
+### 1 e 2 — Cards dourados e fonte dos números (não testado visualmente)
+
+Revisei o CSS resultante (classes Tailwind) e confirmei que `bg-gradient-to-br`
+e as sombras/brilhos em `rgba(201,162,39,...)` são reconhecidos pela versão
+instalada do Tailwind (`node_modules/tailwindcss`, v4 — confirmei que o
+pacote reconhece tanto `bg-gradient-to-*` quanto o novo nome `bg-linear-to-*`
+antes de usar). Não vi o resultado renderizado. **Pedido pra você: abra
+`/painel/faturamento` em 375px e em desktop e confirme que o card
+"Faturamento realizado" aparece maior/mais dourado que os outros 4, e que
+nenhum número troca de largura de um jeito estranho durante a contagem.**
+
+### 3 — Filtros e comparação justa (lógica testada, tela não testada)
+
+Reescrevi as funções de `periodo.ts` (puras, sem banco) num script Node
+isolado e roda-las de verdade, com "hoje" fixado em `2026-10-06` (terça):
+
+| Filtro | `atual` calculado | `anterior` calculado | Esperado |
+|---|---|---|---|
+| Hoje | 06/10 | **29/09** | Terça passada — ✅ é terça mesmo (06/10 − 7 dias) |
+| Este mês | 01/10–01/11 | **01/09–07/09** (6 dias) | Mesmos 6 dias corridos (01–06) nos dois meses — ✅ |
+| 30 dias | 07/09–07/10 | **08/08–07/09** | 30 dias contínuos, sem buraco nem sobreposição — ✅ |
+| Mês passado | 01/09–01/10 | 01/08–01/09 | Mês inteiro vs. mês inteiro (não mudou) — ✅ |
+
+**Pedido pra você**: abrir o Faturamento e confirmar que "30 dias" já vem
+selecionado ao entrar na página (sem clicar em nada), que o gráfico de
+"Este mês" não mostra barras vazias depois de hoje, e que escolher "Hoje"
+troca o gráfico pra "Faturamento por horário" (24 barras).
+
+### 4 — Fluxo de status da Agenda (não testado visualmente)
+
+Não consegui criar um agendamento de teste pra ver os botões na tela.
+**Pedido pra você**: na Agenda, confira que não existe mais botão
+"Confirmar"; que um agendamento "Agendado" aparece com a mesma cor/etiqueta
+que um "Confirmado" (se você tiver algum assim no banco); e que os botões
+"Concluir"/"Faltou" aparecem desabilitados (com a dica "Disponível a partir
+das HH:MM" ao passar o mouse) num agendamento que ainda não começou, e
+habilitam sozinhos (sem precisar atualizar a página) no exato minuto em
+que o horário chega.
