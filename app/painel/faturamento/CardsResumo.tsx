@@ -63,12 +63,15 @@ export function CardsResumo({ cards }: { cards: DadosCardResumo[] }) {
           </div>
 
           {card.indisponivel ? ( // só a "taxa" pode cair aqui: sem nenhum atendimento finalizado, não há taxa pra mostrar
-            <span className="font-display text-2xl font-semibold text-texto-secundario">—</span>
+            <span className="font-sans text-2xl font-semibold text-texto-secundario">—</span>
           ) : (
             // o texto já nasce com o valor FINAL certo (funciona sem JavaScript também); o GSAP acima só reseta pra 0 e conta de novo,
-            // quando o navegador permite animação — ver o comentário completo no useGSAP acima
+            // quando o navegador permite animação — ver o comentário completo no useGSAP acima.
+            // "font-sans" (não "font-display"): a Playfair tem algarismos "antigos" (oldstyle, alturas
+            // variadas), que pareciam "pular" durante a contagem; "lining-nums tabular-nums" garante
+            // algarismos alinhados e de largura fixa, pra não mudar de tamanho a cada frame da animação
             <span
-              className="fat-valor font-display text-2xl font-semibold text-texto"
+              className="fat-valor font-sans text-2xl font-semibold lining-nums tabular-nums text-texto"
               data-valor-final={card.valor}
               data-unidade={card.unidade}
             >

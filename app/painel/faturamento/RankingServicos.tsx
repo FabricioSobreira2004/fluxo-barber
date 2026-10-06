@@ -25,7 +25,7 @@ export function RankingServicos({ ranking }: { ranking: LinhaRankingServico[] })
           <div key={linha.servicoId}>
             <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
               <span className="font-medium text-texto">{linha.nome}</span>
-              <span className="text-sm tabular-nums text-dourado">R$ {centavosParaReais(linha.faturamentoCentavos)}</span>
+              <span className="text-sm lining-nums tabular-nums text-dourado">R$ {centavosParaReais(linha.faturamentoCentavos)}</span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-borda">
               <div

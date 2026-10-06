@@ -33,9 +33,9 @@ export function CardAgendamento({ agendamento, onStatusAlterado }: PropriedadesC
 
       <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row"> {/* empilhado no celular, 3 colunas no desktop */}
         <div className="flex shrink-0 flex-row items-baseline gap-3 sm:w-28 sm:flex-col sm:items-start sm:gap-0.5"> {/* coluna de horário */}
-          <span className="text-xl font-bold tabular-nums text-dourado">{formatarHora(agendamento.inicio)}</span> {/* início: grande e dourado */}
-          <span className="text-sm font-bold tabular-nums text-texto-secundario">{formatarHora(agendamento.fim)}</span> {/* fim: menor */}
-          <span className="text-xs tabular-nums text-texto-secundario">{duracao} min</span>
+          <span className="text-xl font-bold lining-nums tabular-nums text-dourado">{formatarHora(agendamento.inicio)}</span> {/* início: grande e dourado */}
+          <span className="text-sm font-bold lining-nums tabular-nums text-texto-secundario">{formatarHora(agendamento.fim)}</span> {/* fim: menor */}
+          <span className="text-xs lining-nums tabular-nums text-texto-secundario">{duracao} min</span>
         </div>
 
         <div className="flex flex-1 flex-col gap-3"> {/* dados do cliente/serviço/barbeiro + ações */}
@@ -57,7 +57,7 @@ export function CardAgendamento({ agendamento, onStatusAlterado }: PropriedadesC
                     className="flex items-center gap-1 text-xs text-texto-secundario transition-colors hover:text-dourado"
                   >
                     <Phone className="h-3 w-3" aria-hidden /> {/* ícone decorativo; o texto já diz que é um telefone */}
-                    <span className="tabular-nums">{formatarTelefone(telefoneBruto)}</span>
+                    <span className="lining-nums tabular-nums">{formatarTelefone(telefoneBruto)}</span>
                   </a>
                 )}
               </div>
@@ -84,7 +84,7 @@ export function CardAgendamento({ agendamento, onStatusAlterado }: PropriedadesC
         </div>
 
         <div className="shrink-0 text-right sm:text-right"> {/* preço, sempre bem visível à direita */}
-          <span className="text-lg font-bold tabular-nums text-dourado">R$ {centavosParaReais(agendamento.preco_centavos)}</span>
+          <span className="text-lg font-bold lining-nums tabular-nums text-dourado">R$ {centavosParaReais(agendamento.preco_centavos)}</span>
         </div>
       </div>
     </div>

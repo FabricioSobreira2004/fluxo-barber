@@ -39,9 +39,9 @@ export default async function PaginaServicos() {
                 <Badge variante={servico.ativo ? "sucesso" : "neutro"}>{servico.ativo ? "Ativo" : "Inativo"}</Badge>
               </div>
               <span className="text-sm text-texto-secundario">
-                {/* duração e preço são números: tabular-nums alinha os dígitos, font-bold reforça a leitura */}
-                <span className="font-bold tabular-nums">{servico.duracao_min}</span> min · R${" "}
-                <span className="font-bold tabular-nums">{centavosParaReais(servico.preco_centavos)}</span>
+                {/* duração e preço são números: lining-nums (algarismos alinhados) + tabular-nums (largura fixa) evitam o "pulo" dos dígitos, font-bold reforça a leitura */}
+                <span className="font-bold lining-nums tabular-nums">{servico.duracao_min}</span> min · R${" "}
+                <span className="font-bold lining-nums tabular-nums">{centavosParaReais(servico.preco_centavos)}</span>
               </span>
             </div>
             <div className="flex shrink-0 items-center gap-4"> {/* os dois botões de ação ficam lado a lado */}

@@ -332,7 +332,7 @@ export function Tour({ exibirAutomaticamente, nomeBarbearia, statusLink }: Propr
         style={posicaoBalao ? { top: posicaoBalao.top, left: posicaoBalao.left } : undefined}
       >
         <div className="mb-3 flex items-center justify-between gap-3">
-          <span className="text-xs font-medium tabular-nums text-texto-secundario">
+          <span className="text-xs font-medium lining-nums tabular-nums text-texto-secundario">
             {passo + 1} de {passos.length}
           </span>
           <button

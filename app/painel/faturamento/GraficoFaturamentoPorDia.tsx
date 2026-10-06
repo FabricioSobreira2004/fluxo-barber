@@ -57,7 +57,7 @@ export function GraficoFaturamentoPorDia({ pontos }: { pontos: PontoGraficoDia[]
                 className={`fat-barra w-full rounded-t ${temFaturamento ? "bg-dourado" : "bg-borda"}`}
                 style={{ height: `${alturaPercentual}%` }}
               />
-              <span className="mt-1 text-[10px] tabular-nums text-texto-secundario">{dia}</span>
+              <span className="mt-1 text-[10px] lining-nums tabular-nums text-texto-secundario">{dia}</span>
             </div>
           );
         })}

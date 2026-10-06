@@ -74,10 +74,11 @@ export function ComoFunciona() { // seção "Como funciona": explica o fluxo em 
           {passos.map(({ numero, texto }) => (
             <div key={numero} className="relative flex flex-col items-center gap-4 text-center">
               {/* "relative z-10": fica por cima da linha dourada, que passa atrás do círculo.
-                  "font-sans tabular-nums leading-none": a Playfair (fonte de título) tem algarismos
-                  de alturas variadas, que ficavam parecendo desalinhados dentro do círculo — a Inter
-                  (fonte de texto) com números tabulares fica certinha e perfeitamente centralizada */}
-              <span className="passo-numero relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-dourado font-sans text-lg leading-none font-bold tabular-nums text-fundo">
+                  "font-sans lining-nums tabular-nums leading-none": a Playfair (fonte de título) tem algarismos
+                  "antigos" (oldstyle, de alturas variadas), que ficavam parecendo desalinhados dentro do
+                  círculo — a Inter (fonte de texto) com lining-nums (algarismos alinhados) e tabular-nums
+                  (largura fixa) fica certinha e perfeitamente centralizada */}
+              <span className="passo-numero relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-dourado font-sans text-lg leading-none font-bold lining-nums tabular-nums text-fundo">
                 {numero}
               </span>
               <p className="max-w-xs text-sm text-texto/80">{texto}</p>

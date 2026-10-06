@@ -27,7 +27,9 @@ export function MovimentoDestaques({ movimento }: { movimento: MovimentoDestaque
         </div>
         <div>
           <p className="text-sm text-texto-secundario">Horário mais movimentado</p>
-          <p className="font-display text-lg font-semibold text-texto">
+          {/* "font-sans lining-nums tabular-nums" (não "font-display"): é um número ("09h"), não um título —
+              a Playfair deixava o algarismo com aparência "antiga" (oldstyle, de altura diferente) */}
+          <p className="font-sans text-lg font-semibold lining-nums tabular-nums text-texto">
             {movimento.horaMaisMovimentada ? `${String(movimento.horaMaisMovimentada.hora).padStart(2, "0")}h` : "—"}
           </p>
         </div>

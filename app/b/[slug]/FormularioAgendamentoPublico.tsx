@@ -85,9 +85,9 @@ export function FormularioAgendamentoPublico({ barbeariaId, barbeiros, servicos 
       <div className="flex flex-col items-center gap-2 py-4 text-center">
         <p className="text-lg text-sucesso">Agendamento confirmado!</p>
         <p className="text-sm text-texto-secundario">
-          {/* horário e data são números: tabular-nums alinha os dígitos, font-bold reforça a leitura */}
-          {servicoEscolhido?.nome} às <span className="font-bold tabular-nums">{horario}</span>, no dia{" "}
-          <span className="font-bold tabular-nums">{data.split("-").reverse().join("/")}</span>.
+          {/* horário e data são números: lining-nums (algarismos alinhados) + tabular-nums (largura fixa) evitam o "pulo" dos dígitos, font-bold reforça a leitura */}
+          {servicoEscolhido?.nome} às <span className="font-bold lining-nums tabular-nums">{horario}</span>, no dia{" "}
+          <span className="font-bold lining-nums tabular-nums">{data.split("-").reverse().join("/")}</span>.
         </p>
       </div>
     );
@@ -139,8 +139,8 @@ export function FormularioAgendamentoPublico({ barbeariaId, barbeiros, servicos 
               key={h}
               type="button" // não envia o form: só seleciona o horário
               onClick={() => setHorario(h)}
-              className={ // destaque dourado no horário escolhido; tabular-nums+font-bold porque é um número (horário)
-                `rounded-lg border px-3 py-1 text-sm font-bold tabular-nums transition-colors ${
+              className={ // destaque dourado no horário escolhido; lining-nums tabular-nums+font-bold porque é um número (horário)
+                `rounded-lg border px-3 py-1 text-sm font-bold lining-nums tabular-nums transition-colors ${
                   horario === h ? "border-dourado bg-dourado/10 text-dourado" : "border-borda text-texto-secundario hover:text-texto"
                 }`
               }

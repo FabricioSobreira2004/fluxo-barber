@@ -44,7 +44,7 @@ export function ChecklistPrimeirosPassos({ itensObrigatorios, itensProximos, esc
     <Card data-tour="checklist-primeiros-passos" className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-display text-lg font-semibold text-texto">Primeiros passos</h2>
-        <span className="text-xs tabular-nums text-texto-secundario">
+        <span className="text-xs lining-nums tabular-nums text-texto-secundario">
           {totalFeitos} de {todosItens.length}
         </span>
       </div>
