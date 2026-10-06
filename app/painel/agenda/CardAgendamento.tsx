@@ -80,7 +80,7 @@ export function CardAgendamento({ agendamento, onStatusAlterado }: PropriedadesC
             )}
           </div>
 
-          <BotoesStatus id={agendamento.id} status={status} onStatusAlterado={onStatusAlterado} /> {/* some sozinho quando o status é final (sem ação possível) */}
+          <BotoesStatus id={agendamento.id} status={status} inicio={agendamento.inicio} onStatusAlterado={onStatusAlterado} /> {/* some sozinho quando o status é final (sem ação possível) */}
         </div>
 
         <div className="shrink-0 text-right sm:text-right"> {/* preço, sempre bem visível à direita */}

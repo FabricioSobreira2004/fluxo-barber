@@ -58,7 +58,7 @@ function montarPassos(nomeBarbearia: string, statusLink: StatusProntidao): Passo
     {
       seletor: '[data-tour="lista-agenda"]',
       titulo: "Sua agenda",
-      texto: "Todo agendamento aparece aqui. Você pode confirmar, concluir ou cancelar cada um.",
+      texto: "Todo agendamento aparece aqui. Depois do horário marcado, você pode concluir, marcar falta ou cancelar cada um.",
     },
   ];
 }

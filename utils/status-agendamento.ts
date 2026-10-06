@@ -14,8 +14,11 @@ interface ConfigStatus { // tudo que a interface precisa saber sobre um status, 
 }
 
 export const CONFIG_STATUS: Record<StatusAgendamento, ConfigStatus> = { // como mostrar cada status na tela
+  // "agendado" e "confirmado" aparecem EXATAMENTE iguais (mesmo rótulo, mesma cor): na prática a barbearia
+  // não confirma manualmente, então os dois significam a mesma coisa pro dono — "confirmado" continua
+  // existindo no banco só pro futuro lembrete por WhatsApp, em que o próprio cliente confirma (ver BotoesStatus.tsx)
   agendado: { rotulo: "Agendado", variante: "dourado", corFaixa: "bg-dourado" }, // futuro, precisa de atenção: cor cheia
-  confirmado: { rotulo: "Confirmado", variante: "sucesso", corFaixa: "bg-sucesso" }, // futuro, já confirmado: cor cheia
+  confirmado: { rotulo: "Agendado", variante: "dourado", corFaixa: "bg-dourado" },
   // concluído: verde DISCRETO (faixa com metade da opacidade + card levemente apagado) — é um estado final positivo, não precisa chamar atenção
   concluido: { rotulo: "Concluído", variante: "sucesso", corFaixa: "bg-sucesso/50", opacidadeCard: "opacity-80" },
   // cancelado: vermelho discreto + riscado — "não aconteceu", por isso o visual mais apagado de todos
