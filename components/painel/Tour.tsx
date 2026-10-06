@@ -22,7 +22,12 @@ function montarPassos(nomeBarbearia: string, statusLink: StatusProntidao): Passo
     {
       seletor: null,
       titulo: `Bem-vindo ao Fluxo Barber, ${nomeBarbearia}!`,
-      texto: "Em 1 minuto vou te mostrar como deixar sua barbearia pronta para receber agendamentos.",
+      // mesma fonte de verdade do passo 5 (statusLink.pronta): se os 3 requisitos já estão feitos
+      // (ex: quem passou pela configuração rápida do onboarding), não faz sentido prometer "deixar
+      // pronta" uma barbearia que já está — o tour vira só uma visita guiada pelo painel
+      texto: statusLink.pronta
+        ? "Sua barbearia já está pronta! Vou te mostrar rapidinho onde fica cada coisa."
+        : "Em 1 minuto vou te mostrar como deixar sua barbearia pronta para receber agendamentos.",
     },
     {
       seletor: '[data-tour="menu-barbeiros"]',
