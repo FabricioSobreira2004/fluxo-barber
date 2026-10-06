@@ -9,25 +9,20 @@
 --
 -- O QUE ESTE ARQUIVO CRIA:
 --   - 1 barbearia ("Barbearia Imperial", slug "demo" -> página pública em
---     /b/demo), com endereço fictício e o TELEFONE DE VERDADE que você
---     colar no lugar de 'SEU_NUMERO' (ver passo obrigatório logo abaixo);
+--     /b/demo), no Rio de Janeiro (endereço fictício), com o TELEFONE DE
+--     VERDADE do dono (pro botão "Falar com a barbearia" chegar em você);
 --   - 3 barbeiros;
 --   - 8 serviços, com preço de mercado (corte, barba, combo, sobrancelha,
 --     infantil, pigmentação, luzes e hidratação);
 --   - horário de trabalho de terça a sábado, 9h às 19h, pros 3 barbeiros;
 --   - 120 clientes fictícios, nomes masculinos (é barbearia), gerados
---     combinando 2 listas de nome+sobrenome, sem repetir nome completo;
+--     combinando 2 listas de nome+sobrenome, sem repetir nome completo,
+--     com telefone fictício no DDD do Rio (21), pra combinar com o endereço;
 --   - agendamentos do ÚLTIMOS 30 DIAS, de HOJE (parte já passou, parte
 --     ainda não) e dos PRÓXIMOS 5 DIAS — com mais movimento sexta/sábado,
 --     e "Corte Infantil" só pros 5 clientes marcados como pais — pra
 --     agenda, faturamento e a agenda do DIA DE HOJE aparecerem preenchidos
 --     numa demonstração ao vivo.
---
--- ⚠️ PASSO OBRIGATÓRIO ANTES DE RODAR: troque 'SEU_NUMERO' (procure no
--- "passo 1" logo abaixo) pelo SEU número de WhatsApp de verdade, só
--- dígitos, com DDD, sem "+55" (ex: '11999998888') — é esse número que o
--- botão "Falar com a barbearia" da página pública vai chamar quando a
--- demonstração "ainda não estiver pronta" (ou só pra conferir o botão).
 --
 -- O QUE ESTE ARQUIVO **NÃO** CRIA, DE PROPÓSITO: nenhuma linha em "membros"
 -- (ou seja, NINGUÉM é dono desta barbearia ainda). O dono precisa ser uma
@@ -148,8 +143,8 @@ begin
   values (
     'Barbearia Imperial',                               -- nome de exibição, no painel e na página pública
     'demo',                                              -- slug fixo, como pedido: a página pública fica em /b/demo
-    'SEU_NUMERO',                                        -- ⚠️ TROQUE AQUI pelo seu número de verdade (só dígitos, com DDD, ex: '11999998888') ANTES de rodar — é pra ele que o botão "Falar com a barbearia" liga
-    'Rua Augusta, 1200 - Consolação, São Paulo - SP'     -- endereço fictício, só pra preencher a página pública
+    '21990163583',                                       -- telefone de verdade do dono: é pra ele que o botão "Falar com a barbearia" da demo liga
+    'Rua das Laranjeiras, 300 - Laranjeiras, Rio de Janeiro - RJ' -- endereço fictício no Rio, pra combinar com o DDD 21 dos clientes (ver passo 5)
   )
   returning id into v_barbearia_id; -- guarda o id gerado: todo o resto do script depende dele
 
@@ -249,18 +244,19 @@ begin
   set tem_filho = true
   where nome in (select nome from tmp_clientes_demo order by random() limit 5);
 
-  -- telefone sequencial: '1190000' + 4 dígitos (0001, 0002...), nunca um
-  -- número de verdade por acidente, e sempre com 11 dígitos (bate com a
-  -- constraint "clientes_telefone_formato", que exige 10 ou 11 só-números —
-  -- ver migration 003). "row_number() over (order by nome)" dá um número
-  -- de 1 a 120 pra cada linha, sem repetir, e "lpad(...,4,'0')" completa
-  -- com zeros à esquerda (1 -> "0001", 120 -> "0120")
+  -- telefone sequencial: '2190000' + 4 dígitos (0001, 0002...), com o DDD do
+  -- Rio (21) pra combinar com o endereço da barbearia, nunca um número de
+  -- verdade por acidente, e sempre com 11 dígitos (bate com a constraint
+  -- "clientes_telefone_formato", que exige 10 ou 11 só-números — ver
+  -- migration 003). "row_number() over (order by nome)" dá um número de 1 a
+  -- 120 pra cada linha, sem repetir, e "lpad(...,4,'0')" completa com zeros
+  -- à esquerda (1 -> "0001", 120 -> "0120")
   with numerados as (
     select nome, row_number() over (order by nome) as posicao
     from tmp_clientes_demo
   )
   update tmp_clientes_demo t
-  set telefone = '1190000' || lpad(numerados.posicao::text, 4, '0')
+  set telefone = '2190000' || lpad(numerados.posicao::text, 4, '0')
   from numerados
   where t.nome = numerados.nome;
 
@@ -493,7 +489,7 @@ begin
   -- --------------------------------------------------------------------------
   select count(*) into v_total_agendamentos from agendamentos where barbearia_id = v_barbearia_id;
   select count(distinct cliente_id) into v_total_clientes_usados from agendamentos where barbearia_id = v_barbearia_id;
-  raise notice 'Seed concluído: barbearia % (id %), % agendamentos, % dos 120 clientes com pelo menos 1 visita. Falta só ligar o dono — ver RELATORIO.md. LEMBRETE: troque o telefone fictício ''SEU_NUMERO'' pelo seu de verdade, se ainda não trocou.',
+  raise notice 'Seed concluído: barbearia % (id %), % agendamentos, % dos 120 clientes com pelo menos 1 visita. Falta só ligar o dono — ver RELATORIO.md.',
     'demo', v_barbearia_id, v_total_agendamentos, v_total_clientes_usados;
 
 end $$;

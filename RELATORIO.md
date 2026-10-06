@@ -20,11 +20,11 @@ clientes fictícios (nomes masculinos, já que é barbearia), e agendamentos dos
 dos próximos 5 dias (mais movimento sexta/sábado, como pedido). Cada cliente
 tem um limite de visitas realista (a maioria 1 a 3 no período, uns 10 a 15
 "fiéis" com 4 a 6, nunca mais que isso), e o "Corte Infantil" só é sorteado
-pros 5 clientes marcados como pais. Os telefones dos clientes usam o prefixo
-fictício `1190000` + 4 dígitos sequenciais (nunca um número de verdade por
-acidente); o telefone da PRÓPRIA barbearia vem como `'SEU_NUMERO'`, um
-placeholder — troque pelo seu WhatsApp de verdade antes de rodar, é pra ele
-que o botão "Falar com a barbearia" da página pública liga. Todo o SQL está
+pros 5 clientes marcados como pais. A barbearia fica no Rio de Janeiro (endereço fictício), e os telefones dos
+clientes usam o prefixo fictício `2190000` + 4 dígitos sequenciais (DDD 21,
+combinando com o endereço; nunca um número de verdade por acidente); o
+telefone da PRÓPRIA barbearia já vem com o seu número de verdade, pra que o
+botão "Falar com a barbearia" da página pública chegue em você. Todo o SQL está
 comentado linha a linha, explicando o porquê de cada parte — os detalhes
 técnicos (por que cada constraint é respeitada, como a geração evita
 sobreposição de horário, etc.) estão nos comentários do próprio arquivo, pra
