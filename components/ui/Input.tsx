@@ -40,8 +40,16 @@ export function Input({ className = "", type, ...resto }: InputHTMLAttributes<HT
         // "position: absolute" tira ele do fluxo do texto — ele passa a flutuar numa área de
         // 36px coladinha na borda direita (mesmo tamanho do "pr-9" acima), exatamente atrás do
         // nosso ícone dourado: continua 100% clicável ali, só que sem empurrar o texto.
+        // "min-w-0" AQUI (não só no <div> de fora, que já tinha): no Safari do iPhone, o próprio
+        // <input type="time"> tem uma largura MÍNIMA intrínseca (o "relógio" com hora/minuto/AM-PM
+        // embutido do WebKit), que o navegador respeita mesmo com "w-full" — sem "min-w-0" direto
+        // no input, ele se recusa a encolher abaixo dessa largura nativa, e é isso que empurrava o
+        // 2º campo (fim) pra fora da borda do card em telas estreitas, mesmo o <div> de fora já
+        // tendo o tamanho certo. "text-base" (16px): evita o zoom automático do iOS ao focar um
+        // campo com fonte menor que 16px (o resto do site usa o tamanho padrão do navegador, que já
+        // é 16px, mas aqui fica explícito, por garantia, já que é exatamente o campo que o bug afetou.
         className={`
-          peer cursor-pointer ${CLASSES_BASE} pl-3 pr-9
+          peer min-w-0 cursor-pointer ${CLASSES_BASE} pr-9 pl-3 text-base
           [&::-webkit-calendar-picker-indicator]:absolute
           [&::-webkit-calendar-picker-indicator]:right-0
           [&::-webkit-calendar-picker-indicator]:h-full
