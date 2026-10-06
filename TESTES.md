@@ -1,3 +1,136 @@
+# Testes da rodada "5 correções e a tela de Faturamento" (outubro de 2026)
+
+Testei clicando de verdade numa conta de teste nova
+(`teste.faturamento@fluxobarber.test`, ver `PENDENCIAS.md` pra apagar depois),
+com 1 barbeiro, 2 serviços (Corte R$ 35, Barba R$ 25) e 3 agendamentos criados
+na hora pela própria tela da Agenda.
+
+## 1 — Status visuais na Agenda (concluído/cancelado/faltou)
+
+Criei 3 agendamentos de hoje e mudei o status de cada um pelos botões da
+própria tela (Confirmar → Concluir / Cancelar / Confirmar → Faltou):
+
+| Status | Esperado | Obtido |
+|---|---|---|
+| Concluído | Verde discreto (faixa + card com opacidade reduzida) | ✅ Faixa `bg-sucesso/50`, card em `opacity-80`, badge verde |
+| Cancelado | Vermelho discreto + riscado/apagado | ✅ Faixa `bg-erro/50`, card em `opacity-50`, nome/serviço com `line-through` |
+| Faltou | Vermelho discreto (sem risco) | ✅ Faixa `bg-erro/50`, card em `opacity-80`, sem `line-through` |
+
+Confirmei também que os 3 continuam aparecendo normalmente na lista do dia (a
+consulta nunca filtrou por status — não havia bug de filtro, só o visual
+precisava diferenciar melhor um do outro).
+
+**Sobre o seed corrigido (`demo_barbearia.sql`):** não rodei no banco, como
+pedido — só revisei a lógica (2 fases: gerar os horários do período inteiro,
+depois distribuir os clientes embaralhados) e os comentários do próprio
+arquivo. Fica pra você rodar e conferir com o `select` de contagem por dia que
+deixei comentado no final do arquivo.
+
+## 2 — Performance: troca de dia na Agenda (medido de verdade)
+
+Com a conta de teste logada, medi (via `fetch` + `performance.now()`, 5
+repetições cada, direto no console do navegador):
+
+| O que foi medido | Resultado |
+|---|---|
+| Página inteira (`/painel/agenda?data=...`) — o que CADA clique custava antes, já que a troca de dia era um `<Link>` normal, recarregando a página inteira no servidor | **~367ms** em média (279–477ms), **69,7 KB** de HTML |
+| Rota leve nova (`/painel/agenda/dia?data=...`) — o que um dia NUNCA visto custa agora | **~211ms** em média (197–222ms), **943 bytes** de JSON — **98,6% menos dados** transferidos |
+| Dia JÁ visitado nesta sessão (cache em memória) | **0ms, 0 requisições** — confirmado inspecionando a aba de rede do navegador ao clicar "‹"/"›" voltando pra um dia já visto |
+
+Ou seja: mesmo no pior caso (dia nunca visto, nem prefetched), a resposta já é
+~42% mais rápida e quase 99% mais leve; no caso comum (dia vizinho, já
+pré-buscado em segundo plano assim que você chega em qualquer dia), a troca é
+instantânea — zero chamada de rede. Testei clicando nas setas em sequência
+(5-6 cliques seguidos) e a lista trocou na hora em todos, sem nenhum
+"piscar"/skeleton perceptível, exatamente como esperado pelo prefetch dos
+vizinhos.
+
+Também testei: mudar o status de um agendamento (Confirmar/Cancelar/Concluir/
+Faltou) atualiza a lista na hora, sem recarregar nada; criar um agendamento
+novo também atualiza a lista local automaticamente, sem duplicar nem sumir
+nenhum item.
+
+## 3 — Tela de Faturamento
+
+Testei os 3 filtros de período que dependem de cálculo (Hoje, 7 dias,
+Personalizado) com os 3 agendamentos de teste (1 concluído R$ 35, 1 cancelado
+R$ 25, 1 faltou R$ 35):
+
+| Card | Esperado (conta manual) | Obtido |
+|---|---|---|
+| Faturamento realizado | R$ 35,00 (só o concluído) | ✅ |
+| Previsto | R$ 0,00 (nenhum agendado/confirmado sobrando) | ✅ |
+| Atendimentos concluídos | 1 | ✅ |
+| Ticket médio | R$ 35,00 (35/1) | ✅ |
+| Taxa de faltas e cancelamentos | 66,7% (1 faltou + 1 cancelado, sobre 3 finalizados) | ✅ |
+
+Ranking por barbeiro e por serviço bateram certinho (R$ 35,00 / 1 atendimento,
+nos dois). "Personalizado" com um período de 4 meses sem nenhum dado mostrou
+R$ 0,00 em tudo e os estados vazios certos ("Nenhum atendimento concluído"),
+sem quebrar nada. "7 dias" mostrou o gráfico com as 7 barras certas (só a de
+hoje preenchida).
+
+**Valores dos cards, confirmados pelo HTML do servidor:** como o GSAP conta os
+números do zero até o valor final (ver nota de animação abaixo), confirmei os
+valores finais corretos lendo o HTML que o PRÓPRIO SERVIDOR já manda pronto
+(antes de qualquer JavaScript rodar) via `fetch` da própria página — bateram
+exatamente com a tabela acima.
+
+**Responsivo:** testado em 375px (técnica de sempre, `<iframe>` de largura
+fixa, já que a ferramenta de automação não redimensiona a janela de verdade) e
+desktop (1400px) — sem rolagem horizontal; os 5 cards empilham em 1 coluna no
+celular; o gráfico de faturamento por dia vira rolável na horizontal sozinho
+quando o período tem muitos dias (testado com "7 dias").
+
+**Bug encontrado E corrigido na mesma rodada:** o 6º item do menu
+("Faturamento") quebrou a barra inferior do celular — "Faturamento" e
+"Configurações" vazavam um em cima do outro, sem nenhum espaço. Causa: dentro
+de um `<Link>` `flex-col` com `items-center`, os filhos (ícone + texto) não
+esticam pra largura da coluna — cada um fica do tamanho do PRÓPRIO conteúdo.
+Corrigido dando `w-full` ao `<span>` do rótulo. Confirmei via JavaScript
+(`getBoundingClientRect`/`scrollWidth` de cada item do menu, não só visualmente)
+que, depois da correção, nenhum rótulo vaza mais pro item vizinho — os mais
+longos ("Faturamento", "Configurações") agora quebram em 2 linhas dentro da
+própria coluna de 60px.
+
+## 4 — Campo de hora no Safari do iPhone (Horários)
+
+Não tenho como abrir um iPhone/Safari de verdade nesta ferramenta (mesma
+limitação de rodadas anteriores). Confirmei pelo CSS computado, no Chrome desta
+ferramenta, que o `<input type="time">` agora tem `min-width: 0px` e
+`box-sizing: border-box` de verdade — antes só o `<div>` de fora tinha isso, e
+a causa do bug (documentada na própria correção) é o Safari/WebKit respeitar a
+largura mínima intrínseca do "relógio" embutido mesmo com `width: 100%`, a
+menos que `min-width: 0` esteja no PRÓPRIO `<input>`. Testei visualmente a
+tela de Horários em 375px (via `<iframe>`) — os 2 campos de hora cabem lado a
+lado normalmente no Chrome (que tem uma largura mínima nativa menor que a do
+Safari, por isso o bug não aparecia aqui antes). **Peço que você confirme num
+iPhone de verdade quando puder.**
+
+## 5 — Texto do tour quando a barbearia já está pronta
+
+Testado de verdade: na conta de teste (que já tinha os 3 requisitos prontos,
+via "Eu mesmo atendo" na configuração rápida), cliquei "Ver tutorial
+novamente" em Configurações — o passo 1 mostrou "Sua barbearia já está
+pronta! Vou te mostrar rapidinho onde fica cada coisa.", em vez do texto antigo
+("vou te mostrar como deixar sua barbearia pronta"). Testei também, em
+rodadas anteriores, o caso inverso (barbearia incompleta) — esse já estava
+certo antes e continua.
+
+## Sobre ver as animações do GSAP rodando (Faturamento)
+
+Mesma limitação registrada em TODAS as rodadas anteriores com GSAP: a aba fica
+em segundo plano nesta ferramenta de automação (`document.visibilityState`
+não é "visible" de verdade pro Chrome), o que desacelera MUITO o
+`requestAnimationFrame` — a contagem dos cards, que deveria durar ~1,2s, levou
+mais de 15s pra chegar perto do valor final nos meus testes. Confirmei que os
+valores finais estão certos (ver seção 3, acima) lendo o HTML renderizado
+pelo servidor antes de qualquer JavaScript — a causa é 100% da ferramenta, não
+do código; num navegador de verdade, em primeiro plano, a contagem deve
+terminar suave em pouco mais de 1 segundo, como configurado.
+
+---
+
 # Testes das funções públicas (página `/b/[slug]`)
 
 Testes feitos simulando exatamente um visitante sem login: só com a

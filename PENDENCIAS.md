@@ -43,6 +43,32 @@ ser feito perto do lançamento de verdade pra clientes pagantes.
 
 ## 🔧 Para fazer agora
 
+### Apagar a conta de teste da rodada do Faturamento
+
+Pra testar a Agenda (troca de status, cache de dias) e a nova tela de
+Faturamento de ponta a ponta, criei uma conta de teste no seu `localhost`:
+
+- `teste.faturamento@fluxobarber.test` — "Barbearia Teste Faturamento" (slug
+  `barbearia-teste-faturamento`), com 1 barbeiro (via "Eu mesmo atendo"),
+  2 serviços (Corte R$ 35, Barba R$ 25) e 3 agendamentos de hoje (1 concluído,
+  1 cancelado, 1 faltou) — usados pra validar os 5 status visuais da Agenda e
+  os números da tela de Faturamento.
+
+Quando quiser apagar:
+
+1. **Confira antes** (SQL Editor do Supabase):
+   ```sql
+   select id, nome, slug, criado_em from barbearias where slug = 'barbearia-teste-faturamento';
+   ```
+2. **Apague a barbearia** (`on delete cascade` leva barbeiro/serviços/clientes/
+   agendamentos/membros junto):
+   ```sql
+   delete from barbearias where slug = 'barbearia-teste-faturamento';
+   ```
+3. **Apague o usuário**: painel do Supabase → **Authentication → Users**,
+   procure `teste.faturamento@fluxobarber.test` e apague pelo menu "..." da
+   linha dele.
+
 ### Apagar as contas de teste (tutorial + configuração rápida)
 
 Agora são DUAS contas de teste no seu `localhost` (confirmação de email estava

@@ -10,6 +10,189 @@ rodada em "Concluído", "Para fazer agora" e "Pré-lançamento".
 
 ---
 
+## Nova rodada — 5 correções e a tela de Faturamento (outubro de 2026)
+
+Rodada com 5 tarefas independentes, cada uma com seu próprio commit (`git log`
+tem o detalhe técnico de cada uma). Resumo de cada uma, pra você revisar:
+
+### 1 — Bug no seed de demonstração (buraco nos dias recentes) + visual dos status passados
+
+**Causa do buraco:** `supabase/seeds/demo_barbearia.sql` gerava os agendamentos em
+ordem cronológica (primeiro os próximos dias, depois hoje, só por último os 30
+dias passados, do mais antigo pro mais recente), consumindo a cota de visitas de
+cada cliente nessa mesma ordem. Com só 120 clientes e cota baixa (a maioria 1 a 3
+visitas), a cota de todo mundo se esgotava bem antes do laço do histórico chegar
+nos dias mais recentes.
+
+**Correção:** reescrevi a geração em 2 fases — a FASE A percorre o período inteiro
+(30 dias passados + hoje + 5 futuros) e só decide QUAIS horários ficam ocupados
+(sem escolher cliente nenhum ainda); a FASE B embaralha esses horários
+(`order by random()`) e só então sorteia um cliente pra cada um, na ordem
+embaralhada. Como a disputa por clientes deixou de ser cronológica, o esgotamento
+da cota se espalha de forma pareja por todo o período — sem mais buracos. Também
+subi de 120 para 200 clientes (pedido, pro volume caber melhor nas cotas) e deixei
+um `select` de conferência comentado no final do arquivo (contagem de
+agendamentos por dia) pra você validar depois de rodar.
+
+**Insert em `membros` pronto:** o final do arquivo agora tem um bloco
+`do $$ ... $$;` já DESCOMENTADO que busca sua conta em `auth.users` pelo email
+`sobreira.fabricio@hotmail.com` e te liga como "dono" da barbearia "demo" — roda
+sozinho toda vez que você executa o seed inteiro de novo. Se a conta ainda não
+existir nesse momento, ele só avisa (`raise notice`) sem quebrar nada; crie a
+conta e rode só esse bloco final de novo depois. Pra recriar a demo do zero: 1)
+`delete from barbearias where slug = 'demo';`, 2) cole e rode o arquivo inteiro de
+novo — nessa ordem, exatamente como já estava documentado aqui antes.
+
+**⚠️ Não rodei nada disso no banco** — só editei o arquivo `.sql`, como pedido.
+Revise e rode você mesmo no SQL Editor quando quiser.
+
+**Visual dos status passados na Agenda:** já funcionava (a consulta nunca
+filtrava por status, então concluído/cancelado/faltou já apareciam nos dias
+passados — não tinha bug de filtro aí), mas o visual não diferenciava bem um do
+outro. Agora: **concluído** fica verde discreto (faixa lateral e card com opacidade
+reduzida), **cancelado** fica riscado e bem apagado (opacidade menor ainda, nome do
+cliente e serviço com `line-through`), **faltou** fica vermelho discreto. Testei os
+3 criando agendamentos de verdade numa conta de teste e mudando o status pelos
+botões — bateu exatamente com o esperado (print mental: faixinha verde fina no
+concluído, tudo riscado e apagado no cancelado, faixinha vermelha fina no faltou).
+
+### 2 — Performance: troca de dia na Agenda ficou instantânea
+
+**Causa do atraso:** cada clique nas setas `‹ ›` (ou no filtro de barbeiro) era um
+link comum (`<Link href="?data=...">`), e a página de Agenda é 100% dinâmica
+(dados do Supabase, sem cache) — toda a página recarregava no servidor: card "Seu
+link", checklist, tour E a lista de agendamentos, em sequência, a cada clique.
+
+**Correção:** criei uma rota de API só de leitura
+(`app/painel/agenda/dia/route.ts`) que devolve só os agendamentos de UM dia em
+JSON, e isolei a navegação+lista+formulário num Client Component
+(`AgendaInterativa.tsx`) que:
+- troca de dia/barbeiro **em memória**, com `useTransition` (sem travar a
+  interface enquanto busca);
+- mantém um **cache em memória** (um `Map`) de cada dia já visitado nesta sessão —
+  voltar pra um dia já visto é instantâneo, **zero chamada de rede** (confirmei
+  isso de verdade, inspecionando a aba de rede do navegador);
+- faz **prefetch silencioso** do dia anterior e do seguinte, toda vez que você
+  chega num dia novo — por isso, na prática, clicar nas setas em sequência quase
+  nunca mostra o skeleton, só na primeira vez;
+- mostra um **skeleton leve** (3 cards "fantasma") só quando o dia é realmente
+  novo (fora do cache) e a busca ainda não voltou.
+- atualiza a URL (`history.pushState`) pra continuar compartilhável e funcionar
+  com F5, sem pedir ao Next.js pra re-renderizar a página inteira no servidor.
+
+Como a lista deixou de vir pronta do servidor a cada clique, os botões de status
+(Confirmar/Cancelar/Concluir/Faltou) e o formulário de novo agendamento também
+precisaram mudar: agora atualizam a lista **em memória** diretamente (callbacks
+`onStatusAlterado`/`aoCriarComSucesso`), em vez de depender só do
+`revalidatePath` do Next — continuam funcionando perfeitamente, só que sem
+precisar de um recarregamento da página inteira.
+
+**Como testei (de verdade, clicando):** criei 3 agendamentos numa conta de teste,
+mudei os status de cada um (bateu tudo instantâneo, sem reload), e usei a aba de
+rede do navegador pra confirmar: ir de um dia novo pra outro faz 1 chamada
+(`/painel/agenda/dia?data=...`); voltar pra um dia já visto faz **0 chamadas** —
+a lista troca na hora, puxando só da memória.
+
+### 3 — Nova funcionalidade: página Faturamento
+
+Tela nova em `/painel/faturamento`, com item no menu lateral e na barra inferior
+do celular (ícone de carteira). Conteúdo, exatamente como pedido:
+- **Filtro de período:** Hoje, 7 dias, Este mês, Mês passado, Personalizado (com
+  2 campos de data). A lógica de "qual é o período anterior equivalente" (pra
+  comparar) fica isolada em `periodo.ts` — ex: "7 dias" compara com os 7 dias
+  imediatamente antes; "Personalizado" usa a MESMA quantidade de dias do período
+  escolhido, imediatamente antes dele.
+- **5 cards de destaque**, cada um com a variação % vs. o período anterior (seta
+  verde/vermelha): Faturamento realizado (só `concluido`), Previsto
+  (`agendado`/`confirmado` do período), Atendimentos concluídos, Ticket médio, e
+  Taxa de faltas e cancelamentos (`faltou`+`cancelado` sobre o total de
+  atendimentos JÁ FINALIZADOS no período — só esse card tem a lógica de cor
+  invertida: subir é a notícia ruim). Os números entram com uma contagem animada
+  (GSAP), do zero até o valor final.
+- **Gráfico de faturamento por dia** (barras simples, douradas, com tooltip ao
+  passar o mouse/focar), entrando com uma animação leve (`scaleY` a partir da
+  base, com `stagger`).
+- **Ranking por barbeiro** (faturamento, nº de atendimentos, ticket médio) e
+  **ranking por serviço** (quantidade, faturamento) — barras proporcionais, em
+  CSS puro.
+- **Dia da semana e horário mais movimentados** — calculados pela CONTAGEM de
+  agendamentos (não pelo valor em R$), ignorando só os cancelados.
+
+Sempre usa o `preco_centavos` gravado em cada agendamento (nunca o preço atual do
+serviço, que pode ter mudado desde então). RLS garante sozinho que só membros da
+barbearia veem esses dados (mesma policy de sempre, nenhuma mudança no banco).
+**Não precisei de função SQL nova** (nem migration 006): o volume de dados por
+barbearia é pequeno o bastante pra calcular tudo em JavaScript, a partir de uma
+única consulta por período — mais simples que manter uma função a mais no banco.
+
+**Como testei:** criei uma conta de teste (`teste.faturamento@fluxobarber.test`,
+ver PENDENCIAS.md pra apagar), 1 barbeiro, 2 serviços, 3 agendamentos de hoje
+(1 concluído, 1 cancelado, 1 faltou) e cliquei em cada período (Hoje, 7 dias,
+Personalizado) — os números bateram com a conta manual em todos (ex: taxa de
+faltas/cancelamentos = 2 de 3 finalizados = 66,7%). Testei em 375px e desktop:
+sem rolagem horizontal, cards empilham em 1 coluna no celular, o gráfico vira
+rolável na horizontal quando o período tem muitos dias (ex: "Este mês").
+
+**Sobre ver a contagem animada rodando:** mesma limitação de sempre, registrada
+em várias rodadas anteriores (a aba fica em segundo plano nesta ferramenta, então
+o GSAP conta muito mais devagar que o normal, em vez de ~1,2s). Confirmei que os
+valores finais estão certos lendo o HTML renderizado pelo PRÓPRIO SERVIDOR (antes
+de qualquer JavaScript rodar, via `fetch` da própria página) — bateram
+exatamente com a conta manual. Num navegador de verdade, em primeiro plano, a
+contagem deve terminar suave em pouco mais de 1 segundo.
+
+**Bug que a própria tela nova expôs (corrigido no mesmo commit):** com o 6º item
+no menu, a barra inferior do celular (375px) ficou com rótulos longos
+("Faturamento", "Configurações") vazando um em cima do outro, sem espaço nenhum
+entre eles. Causa: o `<Link>` do menu também é `flex-col` com `items-center` —
+isso faz cada filho (ícone, texto) ficar do tamanho do PRÓPRIO conteúdo, em vez
+de esticar pra largura da coluna (60px), então o texto mais longo do que a coluna
+simplesmente vazava por cima do vizinho (nem `min-w-0` nem `break-words`
+resolvem isso sozinhos — eles só valem quando a caixa JÁ é estreita de verdade).
+Corrigido dando `w-full` ao `<span>` do rótulo, forçando a largura certa; agora
+"Faturamento"/"Configurações" quebram em 2 linhas quando precisam, sem vazar.
+
+### 4 — Bug visual no iPhone (Safari): campo de hora cortado em Horários
+
+**Causa:** `<input type="time">` tem uma largura MÍNIMA intrínseca no WebKit (o
+"relógio" com hora/minuto/AM-PM embutido), que o navegador respeita mesmo com
+`width: 100%` no CSS. O `className` de quem usa o `Input` (`components/ui/Input.tsx`)
+já ia pro `<div>` de fora (correção de uma rodada anterior), mas faltava
+`min-width: 0` no PRÓPRIO `<input>` — sem isso, ele se recusava a encolher
+abaixo da largura nativa do WebKit, e era isso que empurrava o 2º campo (fim)
+pra fora da borda do card em telas estreitas, mesmo o `<div>` de fora já tendo o
+tamanho certo.
+
+**Correção:** `min-w-0` direto no `<input>`, e `text-base` (16px) explícito, pra
+garantir que nenhum campo de hora/data do site jamais dispare o zoom automático
+do iOS ao ser focado (o padrão do navegador já era 16px, mas ficou explícito por
+segurança, já que foi exatamente esse componente que o bug afetou). Como
+`Input.tsx` é compartilhado, a correção vale pra TODOS os campos de hora/data do
+site de uma vez só: Horários, Agenda (novo agendamento), Configuração Rápida do
+onboarding e a página pública.
+
+**Como testei:** não tenho como abrir um iPhone/Safari de verdade nesta
+ferramenta (mesma limitação já registrada em rodadas anteriores). Confirmei pelo
+CSS computado, no Chrome desta ferramenta, que o `<input>` agora tem
+`min-width: 0px` e `box-sizing: border-box` de verdade (antes só o `<div>` de
+fora tinha isso) — essas são exatamente as 2 propriedades que o bug pedia pra
+corrigir, e a causa raiz (largura mínima intrínseca do WebKit ignorando
+`width:100%` sem `min-width:0`) é um comportamento bem documentado do Safari.
+Vale você confirmar num iPhone de verdade quando puder.
+
+### 5 — Ajuste no tutorial: texto do 1º passo quando a barbearia já está pronta
+
+Pequeno: o passo de boas-vindas do tour sempre dizia "vou te mostrar como deixar
+sua barbearia pronta", mesmo pra quem já tinha os 3 requisitos prontos (ex: quem
+passou pela Configuração Rápida do onboarding). Agora usa a MESMA fonte de
+verdade do passo 5 (`statusLink.pronta`, a mesma função central de sempre): se já
+está pronta, o texto vira "Sua barbearia já está pronta! Vou te mostrar
+rapidinho onde fica cada coisa." Testei de verdade, clicando "Ver tutorial
+novamente" em Configurações numa conta de teste já pronta — o texto novo apareceu
+certinho no passo 1.
+
+---
+
 ## Nova rodada — barbearia de demonstração (outubro de 2026)
 
 Criei `supabase/seeds/demo_barbearia.sql` — **não rodei em lugar nenhum**, é só
