@@ -5,6 +5,7 @@ import { hojeISO, inicioDoDiaBrasil, somarDias, diferencaDias } from "@/utils/da
 import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
 import { resolverPeriodo, OPCOES_PERIODO, type PeriodoChave } from "./periodo"; // período escolhido + o equivalente anterior, pra comparar
 import {
+  separarLinhasPorPeriodo,
   calcularResumo,
   calcularVariacaoPercentual,
   calcularFaturamentoPorDia,
@@ -56,11 +57,9 @@ export default async function PaginaFaturamento(props: PageProps<"/painel/fatura
 
   const linhas: LinhaFaturamento[] = linhasBrutas ?? [];
 
-  // separa as linhas entre "período atual" e "período anterior" comparando INSTANTES de verdade (new Date().getTime()),
-  // nunca comparando os textos das datas diretamente — strings ISO com fusos horários diferentes não ordenam certo por texto
-  const limiteAtualMs = new Date(inicioDoDiaBrasil(periodo.atual.inicio)).getTime();
-  const linhasAtual = linhas.filter((linha) => new Date(linha.inicio).getTime() >= limiteAtualMs);
-  const linhasAnterior = linhas.filter((linha) => new Date(linha.inicio).getTime() < limiteAtualMs);
+  // separa as linhas entre "período atual" e "período anterior" (função pura, testada em agregacoes.test.ts —
+  // corrige o bug em que "Este mês" comparava com o mês anterior INTEIRO, em vez de só os mesmos N dias corridos)
+  const { atual: linhasAtual, anterior: linhasAnterior } = separarLinhasPorPeriodo(linhas, periodo);
 
   const resumoAtual = calcularResumo(linhasAtual);
   const resumoAnterior = calcularResumo(linhasAnterior);

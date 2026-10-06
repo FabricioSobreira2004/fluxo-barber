@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test utils/*.test.ts",
+    "test": "node --import ./scripts/node-test-setup.mjs --test utils/*.test.ts app/**/*.test.ts",
     "gen:types": "supabase gen types typescript --project-id bvspfjhcooygqfsgirnu > utils/supabase/database.types.ts"
   },
   "dependencies": {

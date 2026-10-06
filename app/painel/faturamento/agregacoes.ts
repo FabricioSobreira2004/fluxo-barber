@@ -1,6 +1,6 @@
 // funções PURAS (sem banco, sem React) que transformam a lista de agendamentos de um período nos números
 // que a tela de Faturamento mostra — separadas do page.tsx só pra ficarem fáceis de ler e de testar isoladas
-import { dataLocalBrasil, horaLocalBrasil, diaDaSemana, somarDias } from "@/utils/data";
+import { dataLocalBrasil, horaLocalBrasil, diaDaSemana, somarDias, inicioDoDiaBrasil } from "@/utils/data";
 import {
   type LinhaFaturamento,
   type ResumoPeriodo,
@@ -10,7 +10,31 @@ import {
   type LinhaRankingServico,
   type MovimentoDestaque,
 } from "./tipos";
-import { type IntervaloPeriodo } from "./periodo";
+import { type IntervaloPeriodo, type PeriodoResolvido } from "./periodo";
+
+// separa uma lista de linhas (já trazida do banco cobrindo do início do período ANTERIOR até o fim do
+// período ATUAL, numa consulta só) entre "atual" e "anterior", comparando INSTANTES de verdade
+// (new Date().getTime()), nunca os textos das datas direto — strings ISO com fusos diferentes não ordenam
+// certo por texto. O "anterior" usa os 2 limites (início E fim) do período anterior, nunca só "< início do
+// atual": em "Este mês", por exemplo, o período anterior pode ser só 01-06/09 (6 dias), bem menor que
+// setembro inteiro — filtrar só por "< início de outubro" pegaria o mês passado inteiro por engano
+// (bug corrigido aqui; ver o teste "separarLinhasPorPeriodo" em agregacoes.test.ts)
+export function separarLinhasPorPeriodo(
+  linhas: LinhaFaturamento[],
+  periodo: PeriodoResolvido
+): { atual: LinhaFaturamento[]; anterior: LinhaFaturamento[] } {
+  const inicioAtualMs = new Date(inicioDoDiaBrasil(periodo.atual.inicio)).getTime();
+  const inicioAnteriorMs = new Date(inicioDoDiaBrasil(periodo.anterior.inicio)).getTime();
+  const fimAnteriorMs = new Date(inicioDoDiaBrasil(periodo.anterior.fim)).getTime();
+
+  const atual = linhas.filter((linha) => new Date(linha.inicio).getTime() >= inicioAtualMs);
+  const anterior = linhas.filter((linha) => {
+    const instanteMs = new Date(linha.inicio).getTime();
+    return instanteMs >= inicioAnteriorMs && instanteMs < fimAnteriorMs;
+  });
+
+  return { atual, anterior };
+}
 
 export function calcularResumo(linhas: LinhaFaturamento[]): ResumoPeriodo {
   let faturamentoRealizadoCentavos = 0;
