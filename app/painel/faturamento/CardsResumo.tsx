@@ -4,13 +4,12 @@ import { useRef, type ReactNode } from "react"; // referência pro contêiner (e
 import { useGSAP } from "@gsap/react"; // hook oficial do GSAP pra React: limpa a animação sozinho ao desmontar
 import gsap from "gsap"; // motor de animação
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react"; // setas de variação (sobe/desce) e "sem variação"
-import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
 import { centavosParaReais } from "@/utils/dinheiro"; // formata centavos pra "25,90" (mesma função usada no resto do site)
 
 export type UnidadeCard = "centavos" | "quantidade" | "percentual"; // os 3 jeitos de formatar o valor de um card
 
 export interface DadosCardResumo {
-  chave: string; // "key" da lista, e também liga o valor final ao elemento certo (ver data-chave abaixo)
+  chave: string; // "key" da lista, e também usada pra achar o card "Faturamento realizado" (ver cardPrincipal abaixo)
   titulo: string;
   icone: ReactNode; // ícone já renderizado NO SERVIDOR (um componente do lucide-react não pode atravessar pra o cliente como prop)
   valor: number; // número final: centavos (inteiro), quantidade (inteiro) ou percentual (ex: 8.3 = "8,3%")
@@ -53,35 +52,91 @@ export function CardsResumo({ cards }: { cards: DadosCardResumo[] }) {
     { scope: containerRef, dependencies: [cards] } // refaz a contagem sempre que o período muda e os números finais são outros
   );
 
+  // "Faturamento realizado" é o card principal (maior, com mais destaque dourado); os outros 4 ficam
+  // numa segunda fileira, mais discretos — "find" (não a posição 0) pra não quebrar se page.tsx
+  // um dia mudar a ordem dos cards
+  const cardPrincipal = cards.find((card) => card.chave === "realizado") ?? cards[0];
+  const cardsSecundarios = cards.filter((card) => card.chave !== cardPrincipal.chave);
+
   return (
-    <div ref={containerRef} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5"> {/* 1 coluna no celular, 5 no desktop */}
-      {cards.map((card) => (
-        <Card key={card.chave} className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-texto-secundario">
-            {card.icone}
-            <span className="text-sm">{card.titulo}</span>
-          </div>
+    <div ref={containerRef} className="flex flex-col gap-4">
+      <CardPrincipal card={cardPrincipal} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"> {/* 1 coluna no celular, 4 no desktop */}
+        {cardsSecundarios.map((card) => (
+          <CardSecundario key={card.chave} card={card} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
-          {card.indisponivel ? ( // só a "taxa" pode cair aqui: sem nenhum atendimento finalizado, não há taxa pra mostrar
-            <span className="font-sans text-2xl font-semibold text-texto-secundario">—</span>
-          ) : (
-            // o texto já nasce com o valor FINAL certo (funciona sem JavaScript também); o GSAP acima só reseta pra 0 e conta de novo,
-            // quando o navegador permite animação — ver o comentário completo no useGSAP acima.
-            // "font-sans" (não "font-display"): a Playfair tem algarismos "antigos" (oldstyle, alturas
-            // variadas), que pareciam "pular" durante a contagem; "lining-nums tabular-nums" garante
-            // algarismos alinhados e de largura fixa, pra não mudar de tamanho a cada frame da animação
-            <span
-              className="fat-valor font-sans text-2xl font-semibold lining-nums tabular-nums text-texto"
-              data-valor-final={card.valor}
-              data-unidade={card.unidade}
-            >
-              {formatarValor(card.valor, card.unidade)}
-            </span>
-          )}
+// o card "Faturamento realizado": mesma identidade dourada dos cards da landing (ver card-beneficio em
+// Beneficios.tsx), só que mais forte — é o número que o dono mais quer ver de cara ao abrir a tela
+function CardPrincipal({ card }: { card: DadosCardResumo }) {
+  return (
+    <div
+      className={ // "motion-safe:" protege só a TRANSIÇÃO/animação (quem pediu menos movimento ainda vê a borda/brilho dourado, só sem o deslize)
+        "group relative overflow-hidden rounded-2xl border border-dourado/40 bg-gradient-to-br from-dourado/10 via-superficie to-superficie p-6 shadow-lg shadow-black/30 motion-safe:transition-[transform,border-color,box-shadow] motion-safe:duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:border-dourado/70 motion-safe:hover:shadow-[0_0_40px_-12px_rgba(201,162,39,0.5)] sm:p-8"
+      }
+    >
+      {/* brilho suave e fixo no canto (sem depender de animação), reforçando o acabamento "premium" */}
+      <div className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-dourado/10 blur-3xl" aria-hidden />
 
-          <IndicadorVariacao variacaoPercentual={card.variacaoPercentual} maiorEhMelhor={card.maiorEhMelhor} />
-        </Card>
-      ))}
+      <div className="relative flex items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-dourado/15 text-dourado sm:h-12 sm:w-12">
+          {card.icone}
+        </div>
+        <span className="text-sm font-medium text-texto-secundario sm:text-base">{card.titulo}</span>
+      </div>
+
+      <div className="relative mt-4 flex flex-col gap-1">
+        {card.indisponivel ? ( // esse card nunca cai aqui na prática ("realizado" sempre tem unidade "centavos"), mas mantém o mesmo contrato dos outros
+          <span className="font-sans text-3xl font-semibold text-texto-secundario sm:text-4xl">—</span>
+        ) : (
+          // "text-dourado" (em vez de "text-texto"): é o único valor em dourado da tela, reforçando que
+          // este é O número principal; ver o comentário completo da contagem GSAP e do lining-nums/tabular-nums no CardSecundario abaixo
+          <span
+            className="fat-valor font-sans text-3xl font-bold lining-nums tabular-nums text-dourado sm:text-4xl"
+            data-valor-final={card.valor}
+            data-unidade={card.unidade}
+          >
+            {formatarValor(card.valor, card.unidade)}
+          </span>
+        )}
+        <IndicadorVariacao variacaoPercentual={card.variacaoPercentual} maiorEhMelhor={card.maiorEhMelhor} />
+      </div>
+    </div>
+  );
+}
+
+// os outros 4 cards: mesma identidade visual do principal, só mais discreta (borda e brilho mais fracos,
+// sem o círculo do ícone maior nem o número em dourado) — pra não competir com o card principal
+function CardSecundario({ card }: { card: DadosCardResumo }) {
+  return (
+    <div className="group relative flex flex-col gap-2 overflow-hidden rounded-xl border border-dourado/15 bg-superficie p-5 shadow-lg shadow-black/30 motion-safe:transition-[transform,border-color] motion-safe:duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:border-dourado/50">
+      <div className="flex items-center gap-2">
+        <span className="text-dourado">{card.icone}</span>
+        <span className="text-sm text-texto-secundario">{card.titulo}</span>
+      </div>
+
+      {card.indisponivel ? ( // só a "taxa" pode cair aqui: sem nenhum atendimento finalizado, não há taxa pra mostrar
+        <span className="font-sans text-2xl font-semibold text-texto-secundario">—</span>
+      ) : (
+        // o texto já nasce com o valor FINAL certo (funciona sem JavaScript também); o GSAP acima só reseta pra 0 e conta de novo,
+        // quando o navegador permite animação — ver o comentário completo no useGSAP acima.
+        // "font-sans" (não "font-display"): a Playfair tem algarismos "antigos" (oldstyle, alturas
+        // variadas), que pareciam "pular" durante a contagem; "lining-nums tabular-nums" garante
+        // algarismos alinhados e de largura fixa, pra não mudar de tamanho a cada frame da animação
+        <span
+          className="fat-valor font-sans text-2xl font-semibold lining-nums tabular-nums text-texto"
+          data-valor-final={card.valor}
+          data-unidade={card.unidade}
+        >
+          {formatarValor(card.valor, card.unidade)}
+        </span>
+      )}
+
+      <IndicadorVariacao variacaoPercentual={card.variacaoPercentual} maiorEhMelhor={card.maiorEhMelhor} />
     </div>
   );
 }
