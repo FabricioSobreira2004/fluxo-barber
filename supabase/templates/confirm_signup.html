@@ -86,6 +86,13 @@
                 <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:12px; color:#6b6b6b;">
                   Se você não criou uma conta no Fluxo Barber, pode ignorar este email com segurança.
                 </p>
+                <!-- linha discreta sobre o spam: enquanto o remetente for o SMTP do Gmail (sem domínio
+                     próprio), esse email costuma cair no Spam, e o Gmail desativa os links de email
+                     marcado como spam -- por isso o aviso fica aqui também, não só na tela do site
+                     (ver AlertaSpam.tsx), caso a pessoa já tenha aberto o email antes de ver a tela -->
+                <p style="margin:8px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:11px; color:#6b6b6b;">
+                  Se este email chegou no Spam, marque como &ldquo;Não é spam&rdquo; para os links funcionarem.
+                </p>
                 <p style="margin:8px 0 0 0; font-family:Arial, Helvetica, sans-serif; font-size:11px; color:#4d4d4d;">
                   Fluxo Barber &middot; contato.fluxobarber@gmail.com
                 </p>

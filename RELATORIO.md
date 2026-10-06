@@ -10,6 +10,69 @@ rodada em "Concluído", "Para fazer agora" e "Pré-lançamento".
 
 ---
 
+## Nova rodada — Avisos de Spam no cadastro e no login (outubro de 2026)
+
+Você confirmou que, com o SMTP do Gmail já configurado, o email de
+confirmação chega, mas cai na caixa de **Spam** — e o Gmail desativa o link
+de um email marcado como spam (só volta a funcionar depois de marcar "Não
+é spam"). Pedido: deixar isso bem claro pra quem usa o site, em 2 lugares.
+Um único commit, já que é uma rodada pequena e os itens são bem ligados
+entre si (o mesmo alerta aparece nos 2 lugares).
+
+### a — Alerta de spam na tela de sucesso do cadastro
+
+Criei `components/AlertaSpam.tsx` — uma caixa âmbar (mesma cor de "atenção"
+já usada no site, `--color-aviso`), com ícone, mostrando "Enviamos para
+`<email>`. Não encontrou o email? Confira a caixa de SPAM ou Lixo
+eletrônico. Se estiver lá, marque como 'Não é spam' para o botão
+funcionar." `FormularioCadastro.tsx` agora mostra esse alerta logo abaixo
+da mensagem "Conta criada!", antes do botão de reenviar.
+
+### b — Mesmo alerta no login, quando o email não está confirmado
+
+Se o login falhar com o erro `email_not_confirmed` do Supabase (senha
+certa, mas a conta ainda não foi confirmada), `app/login/actions.ts` agora
+devolve isso de um jeito especial (`estado.emailNaoConfirmado`, em vez de
+um `erro` genérico) — e `FormularioLogin.tsx` mostra "Você ainda não
+confirmou seu email", o mesmo `AlertaSpam`, e um botão "Reenviar email de
+confirmação" ali mesmo, sem precisar voltar pro `/cadastro`.
+
+Como o botão de reenviar já existia no cadastro (rodada anterior) e agora
+também é usado no login, extraí a Server Action `reenviarConfirmacao` (e o
+helper `obterOrigemAtual`) de `app/cadastro/actions.ts` pra um arquivo novo,
+`app/auth/actions.ts` — compartilhado pelos 2 lugares, em vez de duplicar a
+mesma lógica.
+
+### c — Linha sobre spam no rodapé do email (`confirm_signup.html`)
+
+Adicionei, só nesse template (os outros 3 não foram tocados, como pedido):
+"Se este email chegou no Spam, marque como 'Não é spam' para os links
+funcionarem." — discreta, no mesmo estilo do resto do rodapé.
+
+**🔔 Lembrete pedido por você**: como esse template já estava colado no
+painel do Supabase, **cole a versão atualizada de novo** — Authentication
+→ Email Templates → Confirm signup → apague o conteúdo atual → cole o novo
+conteúdo de `supabase/templates/confirm_signup.html` → Save. O Subject não
+muda. Os outros 3 templates (`reset_password`, `magic_link`,
+`change_email`) não foram alterados, não precisam ser recolados.
+
+### d — Reforço no roteiro de pré-lançamento
+
+Atualizei o item "b" da seção "🚀 Pré-lançamento" do `PENDENCIAS.md`: deixei
+explícito que o SMTP do Gmail hoje cai no Spam (confirmado por você) e que
+a solução definitiva é o domínio próprio + Resend com SPF/DKIM — os avisos
+desta rodada são um contorno (deixar o cliente avisado), não a correção da
+causa.
+
+**Não consegui testar os avisos novos no navegador** (mesma limitação de
+sempre: sem senha de conta de teste, e criar uma conta nova geraria mais
+uma conta de teste pra depois precisar limpar) — validei por
+`npm run lint`, `npm run build` e `npm test`, e por leitura cuidadosa do
+código. **Pedido pra você**: o roteiro específico está em `PENDENCIAS.md`
+→ "Para fazer agora" → "Confirmar visualmente os 2 avisos novos de Spam".
+
+---
+
 ## Nova rodada — SMTP do Gmail (provisório) + limpeza de contas de teste + roteiro de pré-lançamento (outubro de 2026)
 
 Três tarefas independentes, cada uma com seu próprio commit. **Nenhum SQL foi

@@ -5,7 +5,10 @@ import { createClient } from "@/utils/supabase/server"; // cliente Supabase do l
 import { mensagemErroAmigavel } from "@/utils/supabase/erros"; // tradutor de mensagens de erro técnicas
 
 export interface EstadoLogin { // formato do "estado" que o useActionState guarda e mostra na tela
-  erro?: string; // mensagem de erro, se a última tentativa falhou
+  erro?: string; // mensagem de erro, se a última tentativa falhou (qualquer motivo, EXCETO o de baixo)
+  // preenchido só quando o motivo da falha foi especificamente "email não confirmado": guarda o próprio
+  // email (nunca pedimos de novo) pra a tela mostrar o alerta de spam + botão de reenvio (ver FormularioLogin.tsx)
+  emailNaoConfirmado?: string;
 }
 
 export async function entrar(_estadoAnterior: EstadoLogin, formData: FormData): Promise<EstadoLogin> { // Server Action chamada pelo formulário de login
@@ -21,6 +24,9 @@ export async function entrar(_estadoAnterior: EstadoLogin, formData: FormData): 
   const { error } = await supabase.auth.signInWithPassword({ email, password: senha }); // tenta autenticar com email e senha
 
   if (error) { // login falhou (senha errada, email não confirmado, etc.)
+    if (error.code === "email_not_confirmed") { // caso especial: a conta existe e a senha está certa, só falta confirmar o email
+      return { emailNaoConfirmado: email }; // não usa "mensagemErroAmigavel" aqui: a tela mostra um aviso bem mais completo (alerta de spam + reenvio)
+    }
     return { erro: mensagemErroAmigavel(error) }; // mostra uma mensagem amigável em vez do erro técnico em inglês
   }
 

@@ -40,8 +40,39 @@ ser feito perto do lançamento de verdade pra clientes pagantes.
   esperado (as duas primeiras têm barbeiro+serviço+horário ativos; as outras,
   não). A partir de agora, a página pública `/b/[slug]` já reflete a
   prontidão de verdade, em vez de sempre mostrar "ainda não pronta".
+- **SMTP do Gmail configurado, os 4 templates colados e "Confirm email"
+  religado.** Testado por você: o link de confirmação funciona — só que o
+  email costuma **cair na caixa de Spam** (o Gmail desativa os links de um
+  email marcado como spam, por isso o botão só volta a funcionar depois de
+  marcar "Não é spam"). Por causa disso, adicionei avisos bem visíveis sobre
+  isso na tela do site (ver item abaixo, "Para fazer agora") — a solução
+  definitiva (não cair no spam) é o domínio próprio + Resend, já registrada
+  em "Pré-lançamento".
 
 ## 🔧 Para fazer agora
+
+### Colar de novo o `confirm_signup.html` no painel (foi atualizado)
+
+Adicionei uma linha no rodapé desse template avisando sobre o Spam (pedido
+seu, depois de descobrir que o email estava caindo lá). **Como você já
+colou a versão anterior no painel, precisa colar essa de novo** —
+`supabase/templates/confirm_signup.html` → Authentication → Email Templates
+→ Confirm signup → apagar o conteúdo atual → colar o novo → Save. Os outros
+3 templates não mudaram, não precisam ser colados de novo.
+
+### Confirmar visualmente os 2 avisos novos de Spam (cadastro e login)
+
+Adicionei 2 avisos em destaque (cor âmbar, bem visíveis) pra deixar claro
+que o email pode cair no spam:
+- Na tela de sucesso do cadastro (`/cadastro`, depois de criar a conta).
+- Na tela de login (`/login`), se você tentar entrar com uma conta cujo
+  email ainda não foi confirmado — além do aviso, agora também aparece um
+  botão "Reenviar email de confirmação" direto ali, sem precisar voltar pro
+  cadastro.
+
+Como o SMTP já está configurado, dá pra testar isso de verdade agora: veja
+o roteiro "Teste 1" mais abaixo (cadastro) e tente logar com uma conta ainda
+não confirmada (login) pra ver o 2º aviso.
 
 ### Confirmar visualmente os 4 itens da rodada "Faturamento premium + Agenda sem confirmação manual"
 
@@ -52,27 +83,6 @@ conta nova sozinho sem perguntar — por isso só validei esta rodada por
 isolado rodando a mesma lógica de datas (detalhes em `TESTES.md`). Pedido:
 dê uma olhada visual nos 4 itens antes de considerar a rodada fechada —
 o roteiro específico de cada um está na seção correspondente de `TESTES.md`.
-
-### Colar os 4 templates de email e ligar o SMTP do Gmail (provisório)
-
-Criei os templates em HTML (preto e dourado, estilo Fluxo Barber) na pasta
-`supabase/templates/` deste projeto — eles já funcionam com um remetente
-Gmail sem nenhuma alteração (não citam `fluxobarber.com.br`, e o rodapé já
-usa `contato.fluxobarber@gmail.com`). Lista exata de arquivo + Subject pra
-colar em cada um, e explicação completa de como o link de cada template
-funciona: ver a seção "1 — Email via Gmail SMTP" do `RELATORIO.md` (rodada
-mais recente).
-
-Ordem certa, pra não travar no limite de envio do plano grátis do Supabase:
-
-1. **Primeiro** configure o SMTP: Authentication → Settings → SMTP Settings
-   → Host `smtp.gmail.com`, porta `465`, usuário `contato.fluxobarber@gmail.com`,
-   senha = a **senha de app** do Gmail (não a senha normal da conta).
-2. **Depois** cole os 4 templates (Authentication → Email Templates) — só é
-   possível editá-los com um SMTP próprio configurado.
-3. **Por último** religue "Confirm email" (Authentication → Providers →
-   Email) — se religar antes do passo 1, o envio ainda cai no limite baixo
-   do plano grátis do Supabase.
 
 ### Apagar as contas de teste (script consolidado)
 
@@ -104,25 +114,33 @@ quiser no SQL Editor.
 
 ### Testar o link de confirmação por email (preciso que você clique de verdade)
 
-A rota `app/auth/confirm/route.ts` entende os dois formatos de link que o
-Supabase pode mandar (veja a explicação completa na seção "1 — Email via
-Gmail SMTP" do `RELATORIO.md`, rodada mais recente). Agora que o SMTP do
-Gmail está sendo ligado, é a hora certa de testar isso de verdade — como eu
-não tenho como receber e clicar num email de verdade, preciso que você
-confira manualmente:
+**Já confirmado por você**: o link de confirmação funciona — a rota
+`app/auth/confirm/route.ts` entende certo o link do template colado. O
+único problema encontrado foi o email cair no Spam (e, enquanto estiver lá,
+o Gmail desativa o link — só volta a funcionar depois de marcar "Não é
+spam"), o que gerou os avisos novos desta rodada. Faltam testar:
 
-**Teste 1 — cadastro novo (agora também com o botão "Reenviar"):**
+**Teste 1 — cadastro novo (confere os avisos novos de spam):**
 1. Vá em `/cadastro` (local ou no site publicado) e crie uma conta com um
    email de verdade que você consiga acessar.
-2. Se aparecer a mensagem "Conta criada! Enviamos um link de confirmação...",
-   confira se o botão **"Não recebeu? Reenviar email de confirmação"**
-   aparece embaixo — clique nele e confira se chega um segundo email.
-3. Abra qualquer um dos emails recebidos (confira a caixa de spam também) e
-   clique no link.
-4. **Esperado:** você cai direto no `/onboarding`, já logado. Se cair numa
-   tela "Link inválido ou expirado" com o botão "Criar conta de novo", me
-   avise com o link completo que apareceu na barra de endereço — ele ajuda a
-   descobrir o que deu errado.
+2. Na tela "Conta criada!", confira se aparece, logo abaixo da mensagem, o
+   alerta âmbar "Enviamos para `<seu-email>`. Não encontrou o email?
+   Confira a caixa de SPAM...".
+3. Se o email cair no spam, marque "Não é spam" ali mesmo no Gmail — só
+   depois disso o link volta a funcionar (confirmado por você nesta
+   rodada). Teste também o botão "Reenviar email de confirmação".
+4. Abra o email recebido e clique no link.
+5. **Esperado:** você cai direto no `/onboarding`, já logado. Se cair numa
+   tela "Link inválido ou expirado", me avise com o link completo que
+   apareceu na barra de endereço.
+
+**Teste 1b — login antes de confirmar (aviso novo, com botão de reenvio):**
+1. Depois do passo 1 acima (conta criada, email AINDA não confirmado), vá
+   em `/login` e tente entrar com esse email e a senha que você cadastrou.
+2. **Esperado:** aparece "Você ainda não confirmou seu email", com o mesmo
+   alerta âmbar de spam e um botão "Reenviar email de confirmação" — teste
+   o botão, depois confirme o email e tente entrar de novo (deve funcionar
+   normalmente).
 
 **Teste 2 — esqueci minha senha (esse era o que estava quebrado):**
 1. Vá em `/esqueci-senha`, digite o email de uma conta que já existe e envie.
@@ -154,16 +172,28 @@ agora, mas fica registrado pra não esquecer, **na ordem certa**:
   acontecer — eles usam `{{ .SiteURL }}`, que já vem certo direto dessa
   configuração.
 
-**b) Trocar o SMTP do Gmail pelo Resend**
-- Hoje (ver "Para fazer agora" acima) o remetente é
+**b) Trocar o SMTP do Gmail pelo Resend — ⚠️ confirmado: hoje os emails caem no Spam**
+- Hoje (configurado nesta rodada) o remetente é
   `contato.fluxobarber@gmail.com`, via SMTP do Gmail — **provisório**, só
-  pra religar "Confirm email" sem esperar o domínio.
-  Trocar pelo Resend (plano grátis) depois do domínio comprado (item a),
-  com remetente `nao-responda@fluxobarber.com.br` — melhora a entrega (SPF/
-  DKIM no domínio próprio) e tira o limite baixo de envio do Gmail/Supabase.
+  pra religar "Confirm email" sem esperar o domínio. **Testado por você:
+  funciona, mas o email cai na caixa de Spam** — e o Gmail desativa o link
+  de um email marcado como spam, então o cliente só confirma a conta depois
+  de abrir o Spam e marcar "Não é spam" (adicionei avisos bem visíveis
+  sobre isso na tela e no próprio email, mas isso é um contorno, não a
+  solução — um cliente de barbearia, sem contexto, pode nem abrir a caixa
+  de Spam).
+- **Causa**: enviar pelo SMTP comum do Gmail não tem SPF/DKIM alinhados com
+  um domínio próprio — provedores de email tratam isso como sinal de spam.
+  **Solução definitiva**: trocar pelo Resend (plano grátis) depois do
+  domínio comprado (item a), com remetente
+  `nao-responda@fluxobarber.com.br` e os registros SPF/DKIM configurados
+  pro domínio — isso é o que de fato resolve a caixa de Spam, não só
+  contorna com avisos na tela.
 - Depois da troca, atualizar o rodapé dos 4 templates (hoje
-  `contato.fluxobarber@gmail.com`) pro novo remetente, e trocar qualquer URL
-  fixa que ainda citar `fluxo-barber.vercel.app` pelo domínio novo.
+  `contato.fluxobarber@gmail.com`) pro novo remetente, remover o aviso de
+  spam do rodapé do `confirm_signup.html` (não fará mais sentido) e trocar
+  qualquer URL fixa que ainda citar `fluxo-barber.vercel.app` pelo domínio
+  novo.
 
 **c) Cobrança das barbearias**
 - **Fase 1 (lançamento):** manual — Pix ou link de pagamento mandado por

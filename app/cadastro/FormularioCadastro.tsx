@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/Label"; // legenda dos campos do formulá
 import { Input } from "@/components/ui/Input"; // campo de texto estilizado
 import { Button } from "@/components/ui/Button"; // botão estilizado
 import { FormMessage } from "@/components/ui/FormMessage"; // caixa de mensagem de erro/sucesso
-import { cadastrar, reenviarConfirmacao, type EstadoCadastro, type EstadoReenvio } from "./actions"; // Server Actions de cadastro/reenvio e o formato dos estados delas
+import { AlertaSpam } from "@/components/AlertaSpam"; // aviso em destaque pra conferir a caixa de spam (ver também em /login)
+import { reenviarConfirmacao, type EstadoReenvio } from "@/app/auth/actions"; // Server Action de reenvio, compartilhada com /login
+import { cadastrar, type EstadoCadastro } from "./actions"; // Server Action de cadastro e o formato do estado dela
 
 const ESTADO_INICIAL: EstadoCadastro = {}; // nenhuma mensagem antes do primeiro envio
 const ESTADO_INICIAL_REENVIO: EstadoReenvio = {}; // nenhuma mensagem antes do primeiro clique em "Reenviar"
@@ -21,6 +23,10 @@ export function FormularioCadastro() {
     return (
       <div className="flex flex-col gap-4">
         <FormMessage tipo="sucesso">{estado.sucesso}</FormMessage>
+
+        {/* "estado.email" está sempre preenchido aqui: só se entra nesse "if" depois de "cadastrar" ter
+            devolvido sucesso, e ela sempre manda o email junto nesse caso (ver actions.ts) */}
+        <AlertaSpam email={estado.email} />
 
         {/* não deixa o usuário "preso": se o email não chegar (spam, digitação errada no provedor, etc.),
             ele reenvia sem precisar recarregar a página nem perder o email já guardado no estado acima */}

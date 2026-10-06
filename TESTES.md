@@ -568,3 +568,49 @@ Só reorganização de texto em `PENDENCIAS.md` (seção "🚀 Pré-lançamento"
 na ordem a → e pedida — sem nenhum código ou SQL envolvido. Revisei que
 nenhuma informação das pendências antigas (templates, SMTP, domínio,
 cobrança) foi perdida na reorganização, só reagrupada.
+
+## Testes — Avisos de Spam no cadastro e no login (outubro de 2026)
+
+Rodei `npm run lint`, `npm run build` e `npm test` antes do commit — os 3
+passaram sem erro. Nenhum teste automatizado novo (os 2 itens de código
+são só JSX condicional + 1 Server Action nova, sem lógica de data/cálculo
+que valesse a pena isolar num teste, diferente do bug de período de
+rodadas anteriores).
+
+### a e b — Alerta de spam (cadastro e login)
+
+Validado só por leitura + lint/build, não no navegador:
+
+- Conferi que `AlertaSpam.tsx` é usado nos 2 lugares com a prop certa:
+  `estado.email` em `FormularioCadastro.tsx` (sempre preenchido quando
+  `estado.sucesso` existe, ver `app/cadastro/actions.ts`) e
+  `estado.emailNaoConfirmado` em `FormularioLogin.tsx` (só existe dentro do
+  bloco `{estado.emailNaoConfirmado && (...)}`, então o TypeScript já
+  garante que não é `undefined` ali).
+- Conferi a ordem dos hooks em `FormularioLogin.tsx`: os 2 `useActionState`
+  (login e reenvio) são chamados sempre, incondicionalmente, antes de
+  qualquer JSX condicional — `npm run build` (que roda o eslint também)
+  não reclamou de `react-hooks/*`.
+- Conferi que `app/auth/actions.ts` (novo arquivo, com `reenviarConfirmacao`
+  e `obterOrigemAtual` movidos de `app/cadastro/actions.ts`) ainda é
+  importado corretamente nos 2 lugares (`app/cadastro/FormularioCadastro.tsx`
+  e `app/login/FormularioLogin.tsx`) e que `app/cadastro/actions.ts` não
+  ficou com nenhuma referência órfã depois da mudança.
+
+**Não consegui testar no navegador** (mesma limitação de sempre: sem senha
+de conta de teste, e criar uma conta nova geraria mais uma conta de teste
+pra depois precisar limpar). **Pedido pra você**: roteiro "Teste 1" e
+"Teste 1b" em `PENDENCIAS.md`.
+
+### c — Linha de spam no rodapé do email
+
+Só `confirm_signup.html` foi alterado (confirmei que os outros 3 templates
+não têm nenhuma diferença, com `git diff`). **Lembrete, como pedido**:
+colar esse template de novo no painel do Supabase — ele já estava colado
+numa versão sem essa linha.
+
+### d — Reforço no `PENDENCIAS.md`
+
+Só texto — adicionei a confirmação do problema de spam na seção
+"✅ Concluído" e reforcei a causa (SPF/DKIM) e a solução definitiva
+(domínio + Resend) no item "b" de "Pré-lançamento".
