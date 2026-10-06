@@ -5,6 +5,7 @@ import {
   type LinhaFaturamento,
   type ResumoPeriodo,
   type PontoGraficoDia,
+  type PontoGraficoHora,
   type LinhaRankingBarbeiro,
   type LinhaRankingServico,
   type MovimentoDestaque,
@@ -68,6 +69,24 @@ export function calcularFaturamentoPorDia(linhas: LinhaFaturamento[], periodo: I
   const pontos: PontoGraficoDia[] = [];
   for (let dia = periodo.inicio; dia < periodo.fim; dia = somarDias(dia, 1)) { // percorre TODO o período, dia a dia
     pontos.push({ dia, totalCentavos: porDia.get(dia) ?? 0 }); // 0 pros dias sem nenhum "concluido" — a barra aparece vazia, não falta o dia
+  }
+  return pontos;
+}
+
+// usado só quando o período escolhido é de 1 DIA: nesse caso, um gráfico "por dia" teria 1 barra só
+// (inútil) — então a tela troca pra "por horário", com 1 barra por hora do dia (0h a 23h)
+export function calcularFaturamentoPorHora(linhas: LinhaFaturamento[]): PontoGraficoHora[] {
+  const porHora = new Map<number, number>();
+
+  for (const linha of linhas) {
+    if (linha.status !== "concluido") continue; // mesmo critério do gráfico por dia: só faturamento REALIZADO
+    const hora = horaLocalBrasil(linha.inicio);
+    porHora.set(hora, (porHora.get(hora) ?? 0) + linha.preco_centavos);
+  }
+
+  const pontos: PontoGraficoHora[] = [];
+  for (let hora = 0; hora < 24; hora++) { // percorre o dia inteiro, hora a hora (0 pras horas sem nenhum "concluido")
+    pontos.push({ hora, totalCentavos: porHora.get(hora) ?? 0 });
   }
   return pontos;
 }

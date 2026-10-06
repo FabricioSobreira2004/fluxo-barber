@@ -5,21 +5,30 @@ import { type MovimentoDestaque } from "./tipos";
 // "dia_semana" do banco: 0 = domingo ... 6 = sábado (mesmo padrão de horarios_trabalho.dia_semana)
 const NOMES_DIA_SEMANA = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 
-// sem "use client": só exibe os 2 números já calculados no servidor (ver agregacoes.ts -> calcularMovimento)
-export function MovimentoDestaques({ movimento }: { movimento: MovimentoDestaque }) {
+interface PropriedadesMovimentoDestaques {
+  movimento: MovimentoDestaque;
+  // true quando o período escolhido é de 1 dia só (ver page.tsx): nesse caso "dia da semana mais
+  // movimentado" não faz sentido (o período JÁ é só 1 dia), então esse card nem aparece
+  somenteHorario?: boolean;
+}
+
+// sem "use client": só exibe os números já calculados no servidor (ver agregacoes.ts -> calcularMovimento)
+export function MovimentoDestaques({ movimento, somenteHorario = false }: PropriedadesMovimentoDestaques) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <Card className="flex items-center gap-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-dourado/10 text-dourado">
-          <CalendarDays className="h-5 w-5" aria-hidden />
-        </div>
-        <div>
-          <p className="text-sm text-texto-secundario">Dia da semana mais movimentado</p>
-          <p className="font-display text-lg font-semibold text-texto">
-            {movimento.diaSemanaMaisMovimentado ? NOMES_DIA_SEMANA[movimento.diaSemanaMaisMovimentado.diaSemana] : "—"}
-          </p>
-        </div>
-      </Card>
+    <div className={`grid grid-cols-1 gap-4 ${somenteHorario ? "" : "sm:grid-cols-2"}`}>
+      {!somenteHorario && (
+        <Card className="flex items-center gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-dourado/10 text-dourado">
+            <CalendarDays className="h-5 w-5" aria-hidden />
+          </div>
+          <div>
+            <p className="text-sm text-texto-secundario">Dia da semana mais movimentado</p>
+            <p className="font-display text-lg font-semibold text-texto">
+              {movimento.diaSemanaMaisMovimentado ? NOMES_DIA_SEMANA[movimento.diaSemanaMaisMovimentado.diaSemana] : "—"}
+            </p>
+          </div>
+        </Card>
+      )}
 
       <Card className="flex items-center gap-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-dourado/10 text-dourado">

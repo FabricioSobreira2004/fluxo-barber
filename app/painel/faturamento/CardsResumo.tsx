@@ -142,8 +142,8 @@ function CardSecundario({ card }: { card: DadosCardResumo }) {
 }
 
 function IndicadorVariacao({ variacaoPercentual, maiorEhMelhor }: { variacaoPercentual: number | null; maiorEhMelhor: boolean }) {
-  if (variacaoPercentual === null) { // sem período anterior pra comparar (ex: 1º mês de uso, ou período anterior zerado)
-    return <span className="text-xs text-texto-secundario">Sem período anterior pra comparar</span>;
+  if (variacaoPercentual === null) { // sem NENHUM dado no período anterior pra comparar (ex: 1º mês de uso, ou período anterior zerado)
+    return <span className="text-xs text-texto-secundario">Sem dados do período anterior</span>;
   }
 
   if (Math.abs(variacaoPercentual) < 0.05) { // variação "zero" de verdade (arredonda pra 0,0%): neutro, sem seta

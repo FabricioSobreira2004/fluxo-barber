@@ -23,6 +23,11 @@ export interface PontoGraficoDia { // 1 barra do gráfico de faturamento por dia
   totalCentavos: number; // faturamento REALIZADO (só "concluido") naquele dia
 }
 
+export interface PontoGraficoHora { // 1 barra do gráfico de faturamento por horário (período de 1 dia só)
+  hora: number; // 0 a 23
+  totalCentavos: number; // faturamento REALIZADO (só "concluido") naquela hora
+}
+
 export interface LinhaRankingBarbeiro {
   barbeiroId: string;
   nome: string;

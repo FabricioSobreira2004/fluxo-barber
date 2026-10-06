@@ -2,11 +2,12 @@
 // pra comparar" — separado do page.tsx só pra poder ler/testar essa regra isoladamente
 import { somarDias, primeiroDiaDoMes, somarMeses, diferencaDias } from "@/utils/data";
 
-export type PeriodoChave = "hoje" | "7dias" | "mes" | "mes_passado" | "personalizado"; // as 5 opções do filtro
+export type PeriodoChave = "hoje" | "7dias" | "30dias" | "mes" | "mes_passado" | "personalizado"; // as 6 opções do filtro
 
 export const OPCOES_PERIODO: { chave: PeriodoChave; rotulo: string }[] = [ // usado pra desenhar os "chips" do filtro, nesta ordem
   { chave: "hoje", rotulo: "Hoje" },
   { chave: "7dias", rotulo: "7 dias" },
+  { chave: "30dias", rotulo: "30 dias" },
   { chave: "mes", rotulo: "Este mês" },
   { chave: "mes_passado", rotulo: "Mês passado" },
   { chave: "personalizado", rotulo: "Personalizado" },
@@ -27,7 +28,9 @@ export interface PeriodoResolvido {
 export function resolverPeriodo(chave: PeriodoChave, hoje: string, dePersonalizado?: string, atePersonalizado?: string): PeriodoResolvido {
   switch (chave) {
     case "hoje": {
-      return { atual: { inicio: hoje, fim: somarDias(hoje, 1) }, anterior: { inicio: somarDias(hoje, -1), fim: hoje } };
+      // "anterior" = mesmo DIA DA SEMANA da semana passada (ex: terça com a terça passada), nunca "ontem":
+      // ontem pode ser um dia que a barbearia fica fechada, o que pareceria uma queda enorme sem ser de verdade
+      return { atual: { inicio: hoje, fim: somarDias(hoje, 1) }, anterior: { inicio: somarDias(hoje, -7), fim: somarDias(hoje, -6) } };
     }
 
     case "7dias": { // "últimos 7 dias", incluindo hoje — e os 7 dias imediatamente antes desses, pra comparar
@@ -37,11 +40,25 @@ export function resolverPeriodo(chave: PeriodoChave, hoje: string, dePersonaliza
       };
     }
 
+    case "30dias": { // "últimos 30 dias", incluindo hoje — e os 30 dias imediatamente antes desses, pra comparar
+      return {
+        atual: { inicio: somarDias(hoje, -29), fim: somarDias(hoje, 1) },
+        anterior: { inicio: somarDias(hoje, -59), fim: somarDias(hoje, -29) },
+      };
+    }
+
     case "mes": { // mês inteiro (passado + futuro dele), pra "Previsto" já contar o que falta do mês também
       const inicioMesAtual = primeiroDiaDoMes(hoje);
       const inicioProximoMes = somarMeses(inicioMesAtual, 1);
       const inicioMesAnterior = somarMeses(inicioMesAtual, -1);
-      return { atual: { inicio: inicioMesAtual, fim: inicioProximoMes }, anterior: { inicio: inicioMesAnterior, fim: inicioMesAtual } };
+      // comparação justa: só os mesmos N dias corridos do mês anterior (ex: 01-06/10 vs 01-06/09),
+      // NUNCA o mês anterior inteiro — senão poucos dias do mês atual comparariam com o mês passado
+      // inteiro, e pareceria uma queda enorme só por ainda faltar a maior parte do mês atual
+      const diasTranscorridos = diferencaDias(inicioMesAtual, hoje) + 1; // "+1": inclui hoje (dia 6 do mês = 6 dias, do 1 ao 6)
+      return {
+        atual: { inicio: inicioMesAtual, fim: inicioProximoMes },
+        anterior: { inicio: inicioMesAnterior, fim: somarDias(inicioMesAnterior, diasTranscorridos) },
+      };
     }
 
     case "mes_passado": {
