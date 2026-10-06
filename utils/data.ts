@@ -13,11 +13,44 @@ export function somarDias(dataISO: string, quantidade: number): string { // ex: 
   return data.toISOString().slice(0, 10); // volta pro formato "AAAA-MM-DD"
 }
 
+export function inicioDoDiaBrasil(dataISO: string): string { // "AAAA-MM-DD" -> timestamp do início (00:00) desse dia, já no fuso de Brasília
+  return `${dataISO}T00:00:00-03:00`;
+}
+
 export function limitesDoDia(dataISO: string): { inicio: string; fim: string } { // intervalo [inicio, fim) do dia, em horário de Brasília
   return {
-    inicio: `${dataISO}T00:00:00-03:00`,
-    fim: `${somarDias(dataISO, 1)}T00:00:00-03:00`,
+    inicio: inicioDoDiaBrasil(dataISO),
+    fim: inicioDoDiaBrasil(somarDias(dataISO, 1)),
   };
+}
+
+export function primeiroDiaDoMes(dataISO: string): string { // ex: "2026-10-17" -> "2026-10-01"
+  const [ano, mes] = dataISO.split("-").map(Number);
+  return `${ano}-${String(mes).padStart(2, "0")}-01`;
+}
+
+export function somarMeses(dataISO: string, quantidade: number): string { // ex: somarMeses("2026-10-01", -1) -> "2026-09-01"
+  const [ano, mes, dia] = dataISO.split("-").map(Number);
+  const data = new Date(Date.UTC(ano, mes - 1 + quantidade, dia)); // Date.UTC normaliza sozinho meses fora de 1-12 (ex: mês "-1" vira dezembro do ano anterior)
+  return data.toISOString().slice(0, 10);
+}
+
+export function diferencaDias(inicioISO: string, fimISO: string): number { // quantos dias existem entre as 2 datas (fimISO - inicioISO)
+  const [a1, m1, d1] = inicioISO.split("-").map(Number);
+  const [a2, m2, d2] = fimISO.split("-").map(Number);
+  const diferencaMs = Date.UTC(a2, m2 - 1, d2) - Date.UTC(a1, m1 - 1, d1); // UTC dos dois lados: sem risco de horário de verão de outros países
+  return Math.round(diferencaMs / 86_400_000); // 86.400.000ms = 1 dia
+}
+
+export function dataLocalBrasil(timestamptz: string): string { // "2026-10-04T12:00:00+00:00" -> "2026-10-04" (data no fuso de Brasília)
+  return new Date(timestamptz).toLocaleDateString("sv-SE", { timeZone: FUSO_BRASIL }); // locale sueco: mesmo truque de hojeISO()
+}
+
+export function horaLocalBrasil(timestamptz: string): number { // "2026-10-04T12:00:00+00:00" -> 9 (hora cheia, 0 a 23, já no fuso de Brasília)
+  // "hourCycle: h23" (em vez de "hour12: false") garante a faixa 00-23 certa: em algumas implementações,
+  // "hour12: false" sozinho devolve "24" pra meia-noite, em vez de "00"
+  const horaTexto = new Date(timestamptz).toLocaleString("en-US", { timeZone: FUSO_BRASIL, hour: "2-digit", hourCycle: "h23" });
+  return Number(horaTexto);
 }
 
 export function paraTimestampBrasil(dataISO: string, horaISO: string): string { // junta "AAAA-MM-DD" + "HH:MM" num timestamp com fuso explícito

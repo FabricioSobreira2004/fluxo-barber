@@ -3,14 +3,15 @@
 import Link from "next/link"; // navegação entre as páginas do painel
 import { usePathname } from "next/navigation"; // descobre qual rota está ativa agora
 import { type ReactNode } from "react"; // tipo genérico de "qualquer coisa que o React sabe renderizar"
-import { CalendarDays, Users, Scissors, Clock, Settings } from "lucide-react"; // ícones de cada item do menu
+import { CalendarDays, Users, Scissors, Clock, Wallet, Settings } from "lucide-react"; // ícones de cada item do menu
 import { Logo } from "@/components/ui/Logo"; // marca "Fluxo Barber"
 
-const ITENS_MENU = [ // os 5 destinos do painel, nessa ordem, tanto no menu lateral quanto no inferior
+const ITENS_MENU = [ // os 6 destinos do painel, nessa ordem, tanto no menu lateral quanto no inferior
   { href: "/painel/agenda", rotulo: "Agenda", Icone: CalendarDays, dataTour: undefined },
   { href: "/painel/barbeiros", rotulo: "Barbeiros", Icone: Users, dataTour: "menu-barbeiros" }, // "dataTour": onde o tour guiado (components/painel/Tour.tsx) encontra esse item pra destacar
   { href: "/painel/servicos", rotulo: "Serviços", Icone: Scissors, dataTour: "menu-servicos" },
   { href: "/painel/horarios", rotulo: "Horários", Icone: Clock, dataTour: "menu-horarios" },
+  { href: "/painel/faturamento", rotulo: "Faturamento", Icone: Wallet, dataTour: undefined }, // sem passo no tour: a tela é nova, não faz parte do roteiro guiado ainda
   { href: "/painel/configuracoes", rotulo: "Configurações", Icone: Settings, dataTour: undefined },
 ];
 
@@ -73,10 +74,20 @@ export function PainelShell({ nomeBarbearia, botaoSair, children }: Propriedades
               key={href}
               href={href}
               data-tour={dataTour} // mesmo atributo do menu lateral: no celular é ESTE item que está visível, e o tour acha o que estiver visível
-              className={`flex flex-1 flex-col items-center gap-1 py-2 text-[11px] ${ativo ? "text-dourado" : "text-texto-secundario"}`}
+              className={ // "min-w-0" deixa a coluna encolher de verdade (senão o texto empurra a largura e invade o item vizinho);
+                // "break-words" permite quebrar NO MEIO de uma palavra longa (ex: "Faturamento"), já que são rótulos de 1 palavra só,
+                // sem espaço nenhum pra quebrar no lugar "certo" — com 6 itens numa tela de 375px, isso é inevitável pros 2 mais compridos
+                `flex min-w-0 flex-1 flex-col items-center gap-1 px-0.5 py-2 text-center text-[10px] leading-tight break-words ${ativo ? "text-dourado" : "text-texto-secundario"}`
+              }
             >
-              <Icone className="h-5 w-5" aria-hidden />
-              {rotulo}
+              <Icone className="h-5 w-5 shrink-0" aria-hidden />
+              {/* "w-full": o Link usa "items-center" (necessário pra centralizar o ÍCONE, de largura fixa), mas isso
+                  faz um "flex-col" NÃO esticar os filhos pra largura da coluna — cada um fica do tamanho do próprio
+                  conteúdo, então o texto "Configurações"/"Faturamento" ficava mais largo que a coluna (60px) e
+                  vazava por cima do item vizinho, mesmo com min-w-0/break-words (que só valem se a caixa JÁ for
+                  estreita). "w-full" força a largura certa de verdade; "text-center" (no Link) mantém o texto
+                  centralizado dentro dela */}
+              <span className="w-full min-w-0">{rotulo}</span>
             </Link>
           );
         })}
