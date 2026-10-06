@@ -7,7 +7,14 @@ import { CONFIG_STATUS, type StatusAgendamento } from "@/utils/status-agendament
 import { type AgendamentoComRelacionamentos } from "./tipos"; // formato da linha vinda do banco, com os relacionamentos
 import { BotoesStatus } from "./BotoesStatus"; // botões de mudar status
 
-export function CardAgendamento({ agendamento }: { agendamento: AgendamentoComRelacionamentos }) {
+interface PropriedadesCardAgendamento {
+  agendamento: AgendamentoComRelacionamentos;
+  // repassado até o BotoesStatus: avisa o pai (AgendaInterativa) quando o status muda, pra atualizar a
+  // lista em memória sem precisar buscar tudo de novo no servidor
+  onStatusAlterado?: (novoStatus: StatusAgendamento) => void;
+}
+
+export function CardAgendamento({ agendamento, onStatusAlterado }: PropriedadesCardAgendamento) {
   const status = agendamento.status as StatusAgendamento; // o banco garante (via enum) que só vem um desses 5 valores
   const configStatus = CONFIG_STATUS[status];
   const classesTexto = configStatus.riscado ? "line-through text-texto-secundario" : ""; // só o cancelado risca o texto
@@ -73,7 +80,7 @@ export function CardAgendamento({ agendamento }: { agendamento: AgendamentoComRe
             )}
           </div>
 
-          <BotoesStatus id={agendamento.id} status={status} /> {/* some sozinho quando o status é final (sem ação possível) */}
+          <BotoesStatus id={agendamento.id} status={status} onStatusAlterado={onStatusAlterado} /> {/* some sozinho quando o status é final (sem ação possível) */}
         </div>
 
         <div className="shrink-0 text-right sm:text-right"> {/* preço, sempre bem visível à direita */}

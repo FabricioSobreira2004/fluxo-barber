@@ -23,6 +23,9 @@ interface PropriedadesFormularioNovoAgendamento {
   clientes: Cliente[]; // alimenta a sugestão (datalist) do campo de telefone
   dataSelecionada: string; // dia que está sendo visualizado na agenda, pra já vir preenchido
   barbeiroPreSelecionado?: string; // quando a agenda já está filtrada por um barbeiro, começa com ele escolhido
+  // chamado só quando a Server Action termina SEM erro: avisa o pai (AgendaInterativa) pra buscar a lista
+  // do dia de novo (agora a lista vive em memória no cliente, não vem mais pronta do servidor a cada ação)
+  aoCriarComSucesso?: () => void;
 }
 
 export function FormularioNovoAgendamento({
@@ -31,8 +34,16 @@ export function FormularioNovoAgendamento({
   clientes,
   dataSelecionada,
   barbeiroPreSelecionado,
+  aoCriarComSucesso,
 }: PropriedadesFormularioNovoAgendamento) {
   const [estado, acao, pendente] = useActionState(criarAgendamento, ESTADO_INICIAL); // conecta o form à Server Action "criarAgendamento"
+
+  useEffect(() => { // dispara só quando um envio de verdade termina sem erro (não no carregamento inicial do componente)
+    if (estado !== ESTADO_INICIAL && !estado.erro) {
+      aoCriarComSucesso?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só precisa reagir à mudança de "estado"; "aoCriarComSucesso" é estável (useCallback no pai)
+  }, [estado]);
 
   // barbeiro/data/hora precisam ser campos "controlados" (com useState) pra conseguirmos observar
   // toda mudança e perguntar ao servidor se esse horário bate com o expediente cadastrado

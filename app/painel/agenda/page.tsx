@@ -1,13 +1,8 @@
-import Link from "next/link"; // navegação entre dias e barbeiros, via querystring
 import { type Metadata } from "next"; // tipo da metadata desta página
-import { ChevronLeft, ChevronRight, CalendarX } from "lucide-react"; // setas de navegação e ícone do estado vazio
 import { obterBarbeariaAtual } from "@/utils/supabase/barbearia-atual"; // descobre a barbearia do usuário logado
 import { obterOrigemSite } from "@/utils/origem-site"; // domínio atual do site, pra montar a URL pública completa
-import { Card } from "@/components/ui/Card"; // bloco de superfície padrão
-import { EstadoVazio } from "@/components/ui/EstadoVazio"; // mensagem amigável quando não há nada nesse dia
-import { hojeISO, somarDias, limitesDoDia, formatarDataLonga } from "@/utils/data"; // utilitários de data/hora no fuso do Brasil
-import { FormularioNovoAgendamento } from "./FormularioNovoAgendamento"; // formulário (Client Component) de criação
-import { CardAgendamento } from "./CardAgendamento"; // card visual de cada agendamento da lista
+import { hojeISO, limitesDoDia } from "@/utils/data"; // utilitários de data/hora no fuso do Brasil
+import { AgendaInterativa } from "./AgendaInterativa"; // navegação de dia/barbeiro + lista + formulário, tudo em memória no cliente (ver o motivo no próprio arquivo)
 import { type AgendamentoComRelacionamentos } from "./tipos"; // formato da linha vinda do banco, com os relacionamentos
 import { LinkBarbearia } from "@/components/painel/LinkBarbearia"; // card "Seu link", com copiar/WhatsApp/abrir
 import { ChecklistPrimeirosPassos, type ItemChecklist } from "@/components/painel/ChecklistPrimeirosPassos"; // card de progresso dos primeiros passos
@@ -76,10 +71,6 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
   // chaves estrangeiras, que cada relacionamento aqui é um objeto único — não precisa mais de "as unknown as"
   const agendamentos: AgendamentoComRelacionamentos[] = agendamentosBrutos ?? [];
 
-  const diaAnterior = somarDias(dataSelecionada, -1); // pra onde a seta "<" deve levar
-  const diaSeguinte = somarDias(dataSelecionada, 1); // pra onde a seta ">" deve levar
-  const sufixoBarbeiro = barbeiroFiltroId ? `&barbeiro=${barbeiroFiltroId}` : ""; // preserva o filtro ao trocar de dia
-
   const linkJaCompartilhado = Boolean(user.user_metadata?.link_compartilhado); // true depois que o usuário clicou em Copiar ou WhatsApp pelo menos uma vez
   // grupo 1: os 3 requisitos pro link funcionar — "feito" vem DIRETO do "status" (a mesma função
   // central usada no card "Seu link"), nunca recalculado separado, pra nunca desalinhar os dois
@@ -114,79 +105,17 @@ export default async function PaginaAgenda(props: PageProps<"/painel/agenda">) {
         escondidoInicialmente={Boolean(user.user_metadata?.checklist_escondido)}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3"> {/* navegação de dia + filtro de barbeiro */}
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/painel/agenda?data=${diaAnterior}${sufixoBarbeiro}`}
-            className="rounded-lg border border-borda p-2 text-texto-secundario transition-colors hover:text-texto"
-            aria-label="Dia anterior"
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden />
-          </Link>
-          {/* sem "capitalize" aqui: essa classe deixaria TODA palavra maiúscula; formatarDataLonga já devolve só a 1ª letra maiúscula */}
-          <span className="text-sm text-texto">{formatarDataLonga(dataSelecionada)}</span>
-          <Link
-            href={`/painel/agenda?data=${diaSeguinte}${sufixoBarbeiro}`}
-            className="rounded-lg border border-borda p-2 text-texto-secundario transition-colors hover:text-texto"
-            aria-label="Próximo dia"
-          >
-            <ChevronRight className="h-4 w-4" aria-hidden />
-          </Link>
-        </div>
-
-        <div className="flex flex-wrap gap-2"> {/* "chips" de filtro: Todos + um por barbeiro ativo */}
-          <Link
-            href={`/painel/agenda?data=${dataSelecionada}`}
-            className={ // destaque dourado quando nenhum barbeiro específico está selecionado
-              `rounded-full border px-3 py-1 text-sm transition-colors ${
-                !barbeiroFiltroId ? "border-dourado bg-dourado/10 text-dourado" : "border-borda text-texto-secundario hover:text-texto"
-              }`
-            }
-          >
-            Todos
-          </Link>
-          {(barbeiros ?? []).map((barbeiro) => (
-            <Link
-              key={barbeiro.id}
-              href={`/painel/agenda?data=${dataSelecionada}&barbeiro=${barbeiro.id}`}
-              className={ // destaque dourado no barbeiro selecionado
-                `rounded-full border px-3 py-1 text-sm transition-colors ${
-                  barbeiroFiltroId === barbeiro.id
-                    ? "border-dourado bg-dourado/10 text-dourado"
-                    : "border-borda text-texto-secundario hover:text-texto"
-                }`
-              }
-            >
-              {barbeiro.nome}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      <div data-tour="lista-agenda" className="flex flex-col gap-3"> {/* lista dos agendamentos do dia, em ordem cronológica */}
-        {agendamentos.map((agendamento) => (
-          <CardAgendamento key={agendamento.id} agendamento={agendamento} />
-        ))}
-
-        {agendamentos.length === 0 && ( // mensagem amigável quando não há nada marcado nesse dia
-          <EstadoVazio
-            Icone={CalendarX}
-            titulo="Nenhum agendamento nesse dia"
-            descricao="Use o formulário abaixo pra criar o primeiro agendamento, ou escolha outro dia."
-          />
-        )}
-      </div>
-
-      <Card>
-        <h2 className="mb-4 font-display text-lg font-semibold text-texto">Novo agendamento</h2>
-        <FormularioNovoAgendamento
-          barbeiros={barbeiros ?? []}
-          servicos={servicos ?? []}
-          clientes={clientes ?? []}
-          dataSelecionada={dataSelecionada}
-          barbeiroPreSelecionado={barbeiroFiltroId}
-        />
-      </Card>
+      {/* navegação de dia/barbeiro + lista + formulário: tudo isolado num Client Component (AgendaInterativa),
+          que troca de dia em memória (useTransition + cache + prefetch) em vez de recarregar a página inteira —
+          ver o comentário completo no topo de AgendaInterativa.tsx */}
+      <AgendaInterativa
+        barbeiros={barbeiros ?? []}
+        servicos={servicos ?? []}
+        clientes={clientes ?? []}
+        dataInicial={dataSelecionada}
+        barbeiroInicialId={barbeiroFiltroId}
+        agendamentosIniciais={agendamentos}
+      />
     </div>
   );
 }
