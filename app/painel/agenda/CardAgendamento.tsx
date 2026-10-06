@@ -10,7 +10,7 @@ import { BotoesStatus } from "./BotoesStatus"; // botões de mudar status
 export function CardAgendamento({ agendamento }: { agendamento: AgendamentoComRelacionamentos }) {
   const status = agendamento.status as StatusAgendamento; // o banco garante (via enum) que só vem um desses 5 valores
   const configStatus = CONFIG_STATUS[status];
-  const cancelado = status === "cancelado"; // usado pra reduzir a opacidade do card inteiro
+  const classesTexto = configStatus.riscado ? "line-through text-texto-secundario" : ""; // só o cancelado risca o texto
 
   const nomeCliente = agendamento.cliente?.nome ?? "Cliente"; // texto de reserva, caso o relacionamento venha vazio por algum motivo
   const inicialCliente = nomeCliente.charAt(0).toUpperCase(); // primeira letra do nome, pro avatar circular
@@ -19,8 +19,8 @@ export function CardAgendamento({ agendamento }: { agendamento: AgendamentoComRe
   const duracao = duracaoEmMinutos(agendamento.inicio, agendamento.fim); // calculado a partir do próprio início/fim, sempre correto
 
   return (
-    <div // o card inteiro: borda que destaca em dourado no hover, e fica "apagado" se o agendamento foi cancelado
-      className={`flex overflow-hidden rounded-xl border border-borda bg-superficie transition-colors hover:border-dourado ${cancelado ? "opacity-60" : ""}`}
+    <div // o card inteiro: borda que destaca em dourado no hover, e fica discreto nos estados finais (ver opacidadeCard)
+      className={`flex overflow-hidden rounded-xl border border-borda bg-superficie transition-colors hover:border-dourado ${configStatus.opacidadeCard ?? ""}`}
     >
       <div className={`w-1.5 shrink-0 ${configStatus.corFaixa}`} aria-hidden /> {/* faixa lateral fina, na cor do status */}
 
@@ -41,7 +41,7 @@ export function CardAgendamento({ agendamento }: { agendamento: AgendamentoComRe
                 {inicialCliente}
               </div>
               <div>
-                <p className="font-semibold text-texto">{nomeCliente}</p>
+                <p className={`font-semibold text-texto ${classesTexto}`}>{nomeCliente}</p>
                 {telefoneBruto && ( // só mostra o link se houver telefone cadastrado
                   <a
                     href={linkWhatsapp(telefoneBruto)}
@@ -59,7 +59,7 @@ export function CardAgendamento({ agendamento }: { agendamento: AgendamentoComRe
             <Badge variante={configStatus.variante}>{configStatus.rotulo}</Badge>
           </div>
 
-          <div className="flex flex-col gap-1 text-sm text-texto-secundario"> {/* serviço, barbeiro e observação */}
+          <div className={`flex flex-col gap-1 text-sm text-texto-secundario ${classesTexto}`}> {/* serviço, barbeiro e observação */}
             <span className="flex items-center gap-2">
               <Scissors className="h-3.5 w-3.5 shrink-0" aria-hidden /> {agendamento.servico?.nome}
             </span>
