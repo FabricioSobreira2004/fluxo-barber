@@ -443,3 +443,71 @@ que um "Confirmado" (se você tiver algum assim no banco); e que os botões
 das HH:MM" ao passar o mouse) num agendamento que ainda não começou, e
 habilitam sozinhos (sem precisar atualizar a página) no exato minuto em
 que o horário chega.
+
+## Testes — Correção do bug de comparação do Faturamento + confirmação dos botões da Agenda (outubro de 2026)
+
+Rodei `npm test`, `npm run lint` e `npm run build` antes dos 2 commits desta
+rodada — os 3 passaram sem erro nas 2 vezes. Mesma limitação de sempre:
+**não tenho a senha de nenhuma conta de teste cadastrada**, então não abri o
+Faturamento nem a Agenda de verdade no navegador — só o que segue, validado
+por teste automatizado e leitura de código.
+
+### 1 — Bug da comparação "Este mês" (corrigido)
+
+**Causa raiz encontrada:** `periodo.ts` (as datas de início/fim de cada
+filtro) sempre esteve correto — o bug estava em `page.tsx`, na separação das
+linhas vindas do banco entre "período atual" e "período anterior". O código
+antigo cortava só por `periodo.atual.inicio` (ex: 01/10), ignorando
+`periodo.anterior.fim` (ex: 07/09): qualquer linha ANTES de 01/10 caía no
+"anterior" inteiro, inclusive os dias 07 a 30/09, que não deveriam entrar.
+Em filtros onde o período anterior é contíguo ao atual (Hoje, 7 dias, 30
+dias, Mês passado) isso nunca dava problema por coincidência — só "Este mês"
+tem um período anterior MENOR que o atual (só os N dias corridos já
+passados do mês, não o mês inteiro), e foi aí que o bug apareceu.
+
+**Correção:** extraí essa separação pra uma função pura e testável,
+`separarLinhasPorPeriodo()` (em `agregacoes.ts`), que agora respeita os 2
+limites do período anterior (início E fim), não só o início do atual.
+`page.tsx` só chama essa função.
+
+**Teste automatizado novo:** `app/painel/faturamento/periodo.test.ts`
+(roda com `npm test`, junto do teste de telefone já existente). Com
+"hoje" fixado em `2026-10-06` (a mesma data do bug relatado):
+
+| Filtro | `atual` | `anterior` | Confere? |
+|---|---|---|---|
+| Hoje | 06/10 | 29/09 (terça passada, não "ontem") | ✅ |
+| 7 dias | 30/09–07/10 | 23/09–30/09 | ✅ |
+| 30 dias | 07/09–07/10 | 08/08–07/09 | ✅ |
+| Este mês | 01/10–01/11 | **01/09–07/09 (só 6 dias)** | ✅ — era aqui o bug |
+| Mês passado | 01/09–01/10 | 01/08–01/09 | ✅ |
+
+E, mais importante, 2 testes de `separarLinhasPorPeriodo()` com dados
+falsos simulando o cenário exato do bug (linhas espalhadas por todo
+setembro): confirmei que, no filtro "Este mês", só as linhas de 01 e 06/09
+entram no "anterior" — as de 07, 20 e 30/09 ficam de fora dos dois lados,
+exatamente como deveria ser. Sem esse teste, uma regressão futura
+reintroduziria o mesmo bug sem ninguém notar (foi exatamente o que
+aconteceu desta vez: a rodada anterior só testou `periodo.ts` isolado,
+nunca a integração com os dados — por isso o bug passou batido).
+
+**"Sem dados do período anterior" sem seta:** já estava implementado
+(`IndicadorVariacao` em `CardsResumo.tsx`, quando `variacaoPercentual` é
+`null`) — não precisei mudar nada aí. `calcularVariacaoPercentual()` já
+devolve `null` quando o período anterior é zero, e isso já cobre tanto o
+caso de a barbearia não ter nenhum dado nesse intervalo quanto a mudança
+para a mensagem certa, sem seta.
+
+**Pedido pra você**: abrir `/painel/faturamento?periodo=mes` no dia 06/10 e
+confirmar que a variação dos cards agora compara com 01–06/09 (um número
+bem mais parecido, não mais aquele -78%/-77,8%).
+
+### 2 — Botões "Concluir"/"Faltou" habilitam sozinhos (confirmado, sem mudança)
+
+Já funciona sem precisar recarregar — não precisei adicionar nenhum timer
+de "a cada minuto". `BotoesStatus.tsx` já tem um `useEffect` que calcula
+quantos milissegundos faltam até o horário de início e agenda um
+`setTimeout` pra EXATAMENTE esse instante (não um polling a cada minuto,
+e sim um alarme preciso pro segundo certo); quando ele dispara, o estado
+`jaComecou` vira `true` e os botões habilitam sozinhos, sem reload. Cada
+card da Agenda tem o seu próprio timer, independente dos outros.
