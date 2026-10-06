@@ -511,3 +511,60 @@ quantos milissegundos faltam até o horário de início e agenda um
 e sim um alarme preciso pro segundo certo); quando ele dispara, o estado
 `jaComecou` vira `true` e os botões habilitam sozinhos, sem reload. Cada
 card da Agenda tem o seu próprio timer, independente dos outros.
+
+## Testes — Gmail SMTP + limpeza de contas de teste + roteiro de pré-lançamento (outubro de 2026)
+
+Rodei `npm run lint` e `npm run build` antes de cada um dos 3 commits desta
+rodada — passaram sem erro nas 3 vezes. A tarefa 2 (SQL) e a tarefa 3
+(reorganizar `PENDENCIAS.md`) não mudam nenhum código TypeScript, então
+lint/build nelas só confirmam que nada foi afetado por engano.
+
+### 1 — Email via Gmail SMTP
+
+**Templates (`supabase/templates/*.html`):** revisão só de leitura, sem
+nenhuma mudança necessária — já não citavam `fluxobarber.com.br` e já
+usavam `{{ .SiteURL }}` (não `{{ .ConfirmationURL }}`, de propósito, ver
+comentário no topo de cada arquivo).
+
+**Código novo (botão "Reenviar"), testado por leitura + lint/build, não no
+navegador:** `app/cadastro/actions.ts` ganhou `reenviarConfirmacao()` e
+`obterOrigemAtual()` (extraída de dentro de `cadastrar()`); `EstadoCadastro`
+ganhou o campo `email`. `FormularioCadastro.tsx` ganhou um 2º
+`useActionState` (pro reenvio) chamado ANTES de qualquer `return`
+condicional — conferi que isso não violava a regra de hooks do React (eslint
+`react-hooks/*` não reclamou, e o `npm run build` também não).
+
+**Não consegui testar no navegador**: o SMTP do Gmail e o "Confirm email"
+ainda não estavam religados no momento deste commit (você ia configurar
+depois) — hoje o cadastro ainda cai direto logado no `/onboarding`, sem
+passar pela tela com o botão "Reenviar". **Pedido pra você**: depois de
+religar, siga o roteiro "Teste 1" em `PENDENCIAS.md` → "Testar o link de
+confirmação por email".
+
+### 2 — SQL de limpeza das contas de teste
+
+`supabase/manutencao/limpar_contas_teste.sql` — **nenhum SQL foi rodado por
+mim no banco**, nem a Parte 1 (leitura). Validei só por leitura cuidadosa:
+
+- Conferi, nas migrations (`001_schema_inicial.sql`), cada `on delete
+  cascade`/`on delete set null` citado nos comentários do arquivo, pra ter
+  certeza da ordem e do motivo (barbearias primeiro, por clareza; a ordem
+  entre barbearias e usuários não muda o resultado, porque nenhuma FK liga
+  um ao outro diretamente — é "membros" que liga os dois, e cascade em
+  ambas as pontas).
+- Conferi que as 3 contas de teste citadas (`teste.faturamento`,
+  `teste.tutorial`, `teste.configrapida`, todas `@fluxobarber.test`) e seus
+  slugs batem com o que já estava registrado em `PENDENCIAS.md` de rodadas
+  anteriores.
+
+**Pedido pra você**: antes de descomentar a Parte 2, rode a Parte 1 e
+confira com calma — principalmente o 2º email protegido
+(`sobreira.barros.fabricio@gmail.com`, que completei por presumir ser seu
+usuário principal; troque se o seu login de verdade for outro).
+
+### 3 — Roteiro de pré-lançamento
+
+Só reorganização de texto em `PENDENCIAS.md` (seção "🚀 Pré-lançamento"),
+na ordem a → e pedida — sem nenhum código ou SQL envolvido. Revisei que
+nenhuma informação das pendências antigas (templates, SMTP, domínio,
+cobrança) foi perdida na reorganização, só reagrupada.

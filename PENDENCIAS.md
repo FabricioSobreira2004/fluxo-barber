@@ -53,83 +53,73 @@ isolado rodando a mesma lógica de datas (detalhes em `TESTES.md`). Pedido:
 dê uma olhada visual nos 4 itens antes de considerar a rodada fechada —
 o roteiro específico de cada um está na seção correspondente de `TESTES.md`.
 
-### Apagar a conta de teste da rodada do Faturamento
+### Colar os 4 templates de email e ligar o SMTP do Gmail (provisório)
 
-Pra testar a Agenda (troca de status, cache de dias) e a nova tela de
-Faturamento de ponta a ponta, criei uma conta de teste no seu `localhost`:
+Criei os templates em HTML (preto e dourado, estilo Fluxo Barber) na pasta
+`supabase/templates/` deste projeto — eles já funcionam com um remetente
+Gmail sem nenhuma alteração (não citam `fluxobarber.com.br`, e o rodapé já
+usa `contato.fluxobarber@gmail.com`). Lista exata de arquivo + Subject pra
+colar em cada um, e explicação completa de como o link de cada template
+funciona: ver a seção "1 — Email via Gmail SMTP" do `RELATORIO.md` (rodada
+mais recente).
+
+Ordem certa, pra não travar no limite de envio do plano grátis do Supabase:
+
+1. **Primeiro** configure o SMTP: Authentication → Settings → SMTP Settings
+   → Host `smtp.gmail.com`, porta `465`, usuário `contato.fluxobarber@gmail.com`,
+   senha = a **senha de app** do Gmail (não a senha normal da conta).
+2. **Depois** cole os 4 templates (Authentication → Email Templates) — só é
+   possível editá-los com um SMTP próprio configurado.
+3. **Por último** religue "Confirm email" (Authentication → Providers →
+   Email) — se religar antes do passo 1, o envio ainda cai no limite baixo
+   do plano grátis do Supabase.
+
+### Apagar as contas de teste (script consolidado)
+
+Criei `supabase/manutencao/limpar_contas_teste.sql`, juntando numa só as
+contas de teste já registradas aqui (veja a lista completa e a ordem certa
+de apagar — barbearias antes dos usuários, por causa dos `on delete
+cascade`/`on delete set null` das migrations — nos comentários do próprio
+arquivo):
 
 - `teste.faturamento@fluxobarber.test` — "Barbearia Teste Faturamento" (slug
-  `barbearia-teste-faturamento`), com 1 barbeiro (via "Eu mesmo atendo"),
-  2 serviços (Corte R$ 35, Barba R$ 25) e 3 agendamentos de hoje (1 concluído,
-  1 cancelado, 1 faltou) — usados pra validar os 5 status visuais da Agenda e
-  os números da tela de Faturamento.
-
-Quando quiser apagar:
-
-1. **Confira antes** (SQL Editor do Supabase):
-   ```sql
-   select id, nome, slug, criado_em from barbearias where slug = 'barbearia-teste-faturamento';
-   ```
-2. **Apague a barbearia** (`on delete cascade` leva barbeiro/serviços/clientes/
-   agendamentos/membros junto):
-   ```sql
-   delete from barbearias where slug = 'barbearia-teste-faturamento';
-   ```
-3. **Apague o usuário**: painel do Supabase → **Authentication → Users**,
-   procure `teste.faturamento@fluxobarber.test` e apague pelo menu "..." da
-   linha dele.
-
-### Apagar as contas de teste (tutorial + configuração rápida)
-
-Agora são DUAS contas de teste no seu `localhost` (confirmação de email estava
-desligada, então não precisei de email de verdade):
-
+  `barbearia-teste-faturamento`): 1 barbeiro, 2 serviços, 3 agendamentos de
+  teste (status visuais da Agenda + números do Faturamento).
 - `teste.tutorial@fluxobarber.test` — "Barbearia Tutorial Teste" (slug
-  `barbearia-tutorial-teste`), da rodada anterior: 1 barbeiro ("João Barbeiro"), sem
-  serviço, sem horário — deixei de propósito "não pronta", pra testar o selo âmbar, o
-  aviso ao compartilhar, e o grupo "Obrigatório" do checklist ainda pendente. Também
-  usei essa conta pra testar "Ver tutorial novamente" (em Configurações), então o tour
-  está marcado como "não visto" de novo nela — sem problema, só reflexo do teste.
-- `teste.configrapida@fluxobarber.test` — "Barbearia Config Rapida Teste" (slug
-  `barbearia-config-rapida-teste`), desta rodada: passei pelo assistente de
-  configuração rápida até o fim (1 barbeiro, os serviços "Corte" e "Barba" com preço,
-  horário padrão segunda a sábado) — fica "pronta", pra testar o selo verde e o passo
-  5 do tour sem o aviso.
+  `barbearia-tutorial-teste`): deixada de propósito "não pronta" (sem
+  serviço/horário), pra testar o selo âmbar do checklist.
+- `teste.configrapida@fluxobarber.test` — "Barbearia Config Rapida Teste"
+  (slug `barbearia-config-rapida-teste`): passada pelo assistente de
+  configuração rápida até o fim, fica "pronta".
 
-Quando quiser apagar as duas:
-
-1. **Confira antes de apagar** (SQL Editor do Supabase), pra ter certeza que são as
-   barbearias certas:
-   ```sql
-   select id, nome, slug, criado_em from barbearias
-   where slug in ('barbearia-tutorial-teste', 'barbearia-config-rapida-teste');
-   ```
-2. **Apague as barbearias** — todas as tabelas (membros, barbeiros, serviços,
-   clientes, horários, agendamentos) têm `on delete cascade` ligado a
-   `barbearia_id`, então apagar essas 2 linhas já leva tudo junto:
-   ```sql
-   delete from barbearias
-   where slug in ('barbearia-tutorial-teste', 'barbearia-config-rapida-teste');
-   ```
-3. **Apague os 2 usuários**: painel do Supabase → **Authentication → Users**,
-   procure `teste.tutorial@fluxobarber.test` e `teste.configrapida@fluxobarber.test`
-   e apague cada um por lá (botão no menu "..." da linha dele). Pode ser antes ou
-   depois do passo 2 — são independentes (apagar o usuário sozinho não apagaria a
-   barbearia, porque é a barbearia que "aponta" pro dono, e não o contrário).
+O arquivo tem 2 partes: primeiro um `select` só de leitura (pra você
+conferir a lista de barbearias/usuários antes de qualquer coisa), depois os
+`delete` (comentados dentro de `/* ... */`, só descomente depois de
+conferir) — com proteção explícita (`not in (...)`) pra nunca apagar `demo`,
+`barbearia-teste`, `salao-de-beleza`, nem os emails
+`sobreira.fabricio@hotmail.com`/o seu usuário principal, mesmo que a lista
+de "apagar" acima seja editada errado no futuro. **Nenhum desses deletes foi
+rodado por mim** — o arquivo só foi criado, pra você revisar e rodar quando
+quiser no SQL Editor.
 
 ### Testar o link de confirmação por email (preciso que você clique de verdade)
 
-A rota `app/auth/confirm/route.ts` agora entende os dois formatos de link que
-o Supabase pode mandar (veja a explicação completa na seção "Colar os 4
-templates..." lá embaixo, em Pré-lançamento). Como eu não tenho como receber
-e clicar num email de verdade, preciso que você confira isso manualmente:
+A rota `app/auth/confirm/route.ts` entende os dois formatos de link que o
+Supabase pode mandar (veja a explicação completa na seção "1 — Email via
+Gmail SMTP" do `RELATORIO.md`, rodada mais recente). Agora que o SMTP do
+Gmail está sendo ligado, é a hora certa de testar isso de verdade — como eu
+não tenho como receber e clicar num email de verdade, preciso que você
+confira manualmente:
 
-**Teste 1 — cadastro novo:**
+**Teste 1 — cadastro novo (agora também com o botão "Reenviar"):**
 1. Vá em `/cadastro` (local ou no site publicado) e crie uma conta com um
    email de verdade que você consiga acessar.
 2. Se aparecer a mensagem "Conta criada! Enviamos um link de confirmação...",
-   abra o email (confira a caixa de spam também) e clique no link.
-3. **Esperado:** você cai direto no `/onboarding`, já logado. Se cair numa
+   confira se o botão **"Não recebeu? Reenviar email de confirmação"**
+   aparece embaixo — clique nele e confira se chega um segundo email.
+3. Abra qualquer um dos emails recebidos (confira a caixa de spam também) e
+   clique no link.
+4. **Esperado:** você cai direto no `/onboarding`, já logado. Se cair numa
    tela "Link inválido ou expirado" com o botão "Criar conta de novo", me
    avise com o link completo que apareceu na barra de endereço — ele ajuda a
    descobrir o que deu errado.
@@ -152,55 +142,44 @@ e clicar num email de verdade, preciso que você confira isso manualmente:
 
 Essas pendências só importam quando o Fluxo Barber for sair do modo "só eu
 testando" para receber clientes pagantes de verdade. Não precisa resolver
-agora, mas fica registrado pra não esquecer:
+agora, mas fica registrado pra não esquecer, **na ordem certa**:
 
-- **Colar os 4 templates de email no painel do Supabase** (depende do SMTP
-  próprio, item logo abaixo — por isso só entra aqui, em Pré-lançamento).
-  Criei os templates em HTML (preto e dourado, no estilo do Fluxo Barber) na
-  pasta `supabase/templates/` deste projeto, mas **o plano gratuito do
-  Supabase, sem um SMTP próprio configurado, não deixa editar os templates de
-  email** — por isso, hoje, todo email sai com o texto e o visual padrão do
-  Supabase (em inglês, sem a cor da marca). Assim que o SMTP próprio
-  estiver configurado (item abaixo), o passo a passo é:
-  1. Abra o painel do Supabase → **Authentication → Email Templates**.
-  2. Para cada um dos 4 templates abaixo: clique no nome na lista, apague o
-     conteúdo atual, cole o conteúdo do arquivo `.html` correspondente deste
-     projeto, cole o assunto sugerido no campo **Subject**, e clique em
-     **Save**.
+**a) Comprar o domínio `fluxobarber.com.br`**
+- Registro.br, ~R$ 40/ano.
+- Adicionar o domínio na Vercel (Project Settings → Domains).
+- Atualizar em Authentication → URL Configuration, no painel do Supabase:
+  **Site URL** e **Redirect URLs**, trocando `https://fluxo-barber.vercel.app`
+  pelo domínio novo (ex: `https://fluxobarber.com.br`). Os templates de email
+  (`supabase/templates/`) não precisam de nenhuma alteração quando isso
+  acontecer — eles usam `{{ .SiteURL }}`, que já vem certo direto dessa
+  configuração.
 
-  | Template no painel | Arquivo neste projeto | Assunto sugerido |
-  |---|---|---|
-  | Confirm signup | `supabase/templates/confirm_signup.html` | Confirme seu cadastro no Fluxo Barber |
-  | Reset Password | `supabase/templates/reset_password.html` | Redefina sua senha — Fluxo Barber |
-  | Change Email Address | `supabase/templates/change_email.html` | Confirme a alteração do seu email — Fluxo Barber |
-  | Magic Link | `supabase/templates/magic_link.html` | Seu link de acesso — Fluxo Barber |
+**b) Trocar o SMTP do Gmail pelo Resend**
+- Hoje (ver "Para fazer agora" acima) o remetente é
+  `contato.fluxobarber@gmail.com`, via SMTP do Gmail — **provisório**, só
+  pra religar "Confirm email" sem esperar o domínio.
+  Trocar pelo Resend (plano grátis) depois do domínio comprado (item a),
+  com remetente `nao-responda@fluxobarber.com.br` — melhora a entrega (SPF/
+  DKIM no domínio próprio) e tira o limite baixo de envio do Gmail/Supabase.
+- Depois da troca, atualizar o rodapé dos 4 templates (hoje
+  `contato.fluxobarber@gmail.com`) pro novo remetente, e trocar qualquer URL
+  fixa que ainda citar `fluxo-barber.vercel.app` pelo domínio novo.
 
-  Esses templates usam um link **manual** (`token_hash` + `type`), apontando
-  direto pra `app/auth/confirm/route.ts`, em vez do link padrão do Supabase
-  (que passa primeiro pelo servidor deles). A rota já está pronta pra
-  entender os dois formatos ao mesmo tempo, então colar os templates não
-  quebra nada que já está funcionando hoje.
-- **SMTP próprio** (ex: Resend, que tem plano gratuito generoso) em
-  Authentication → Settings → SMTP Settings — é o que **libera a edição dos
-  templates** acima, e também tira o envio de email do limite baixo do plano
-  gratuito do Supabase (já vimos o erro `over_email_send_rate_limit` nos
-  testes). Pra configurar direito (SPF/DKIM, e-mails não caindo no spam),
-  o ideal é enviar a partir de um endereço no domínio **`fluxobarber.com.br`**
-  — então esse item depende do item "Domínio próprio" logo abaixo.
-- **Religar "Confirm email"** (Authentication → Providers → Email) — hoje,
-  provavelmente, uma conta nova já nasce logada, sem precisar confirmar o
-  email (bom pra testar rápido, ruim pra produção, porque não garante que o
-  email da barbearia é de verdade). Só religue **depois** do SMTP próprio
-  estar configurado, senão esbarra no mesmo limite de envio citado acima.
-- **Revisão dos Termos de Uso e da Política de Privacidade por um advogado**
-  antes do lançamento comercial — os textos atuais (`/termos` e
-  `/privacidade`) são um modelo inicial, em linguagem simples, mas não
-  substituem uma revisão jurídica (principalmente a parte de LGPD: papéis de
-  controlador/operador, e qualquer cláusula de responsabilidade).
-- **Domínio próprio** `fluxobarber.com.br` (hoje o site usa o domínio
-  gratuito da Vercel, `fluxo-barber.vercel.app`).
-- **Cobrança / assinaturas e CNPJ** — pra cobrar das barbearias de verdade, é
-  preciso ter CNPJ e algum sistema de pagamento recorrente (ex: Stripe).
+**c) Cobrança das barbearias**
+- **Fase 1 (lançamento):** manual — Pix ou link de pagamento mandado por
+  WhatsApp pra cada barbearia.
+- **Fase 2 (quando tiver de 5 a 10 clientes pagantes):** automática, via
+  Asaas (cobrança recorrente).
+
+**d) CNPJ**
+- Só depois que a receita for recorrente (ou seja, depois da fase 2 do item
+  c) — não é bloqueante pro lançamento com cobrança manual via Pix/WhatsApp.
+
+**e) Revisão jurídica dos Termos de Uso e da Política de Privacidade — ✅ já feito**
+- `/termos` e `/privacidade` já foram revisados (LGPD incluída: papéis de
+  controlador/operador e cláusulas de responsabilidade). Item concluído,
+  mantido aqui só pra preservar a ordem completa do roteiro de
+  pré-lançamento.
 
 ---
 

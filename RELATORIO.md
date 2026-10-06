@@ -10,6 +10,125 @@ rodada em "Concluído", "Para fazer agora" e "Pré-lançamento".
 
 ---
 
+## Nova rodada — SMTP do Gmail (provisório) + limpeza de contas de teste + roteiro de pré-lançamento (outubro de 2026)
+
+Três tarefas independentes, cada uma com seu próprio commit. **Nenhum SQL foi
+rodado no banco por mim** — a tarefa 2 só criou um arquivo `.sql` pra você
+revisar e rodar manualmente, como pedido.
+
+### 1 — Email via Gmail SMTP (revisão dos templates + fluxo de cadastro)
+
+**Os 4 templates em `supabase/templates/` não precisaram de nenhuma
+alteração.** Eles já:
+
+- Não citam `fluxobarber.com.br` em nenhum lugar — o rodapé já usa
+  `contato.fluxobarber@gmail.com`, o mesmo endereço do SMTP que você vai
+  configurar.
+- Não usam `{{ .ConfirmationURL }}` **de propósito** (isso é intencional, não
+  um esquecimento — ver o comentário no topo de `confirm_signup.html` e
+  `reset_password.html`): esse link padrão do Supabase aponta direto pro
+  servidor deles, que confirma e cria a sessão sem passar pelo nosso Next.js.
+  Em vez disso, os templates montam o link na mão com `{{ .SiteURL }}` +
+  `{{ .TokenHash }}` (ambas variáveis oficiais do Supabase, preenchidas a
+  partir da **Site URL** configurada em Authentication → URL Configuration,
+  hoje `https://fluxo-barber.vercel.app` — então a "URL atual" pedida já é
+  usada automaticamente, sem precisar hardcodar nada no arquivo) — apontando
+  pra nossa própria rota `app/auth/confirm/route.ts`, que chama
+  `supabase.auth.verifyOtp()` no servidor. Essa rota já funciona com e sem
+  SMTP próprio (ver o comentário no topo do arquivo), então colar os
+  templates agora não quebra nada do que já funciona hoje com o template
+  padrão do Supabase.
+
+**Lista exata pra colar no painel (Authentication → Email Templates)** —
+pode ser feito assim que o SMTP do Gmail estiver salvo, sem esperar o
+domínio próprio:
+
+| Template no painel do Supabase | Arquivo deste projeto | Subject |
+|---|---|---|
+| Confirm signup | `supabase/templates/confirm_signup.html` | Confirme seu cadastro no Fluxo Barber |
+| Reset Password | `supabase/templates/reset_password.html` | Redefina sua senha — Fluxo Barber |
+| Magic Link | `supabase/templates/magic_link.html` | Seu link de acesso — Fluxo Barber |
+| Change Email Address | `supabase/templates/change_email.html` | Confirme a alteração do seu email — Fluxo Barber |
+
+Passo a passo pra cada linha da tabela: no painel, clique no nome do
+template na lista, apague o conteúdo atual do corpo, cole o conteúdo do
+arquivo `.html` correspondente, cole o texto da coluna "Subject" no campo
+**Subject**, e clique em **Save**.
+
+**Fluxo de cadastro com "Confirm email" ligado — o que já existia e o que
+adicionei:**
+
+- `app/cadastro/actions.ts` já distinguia certo os 2 cenários depois de
+  `supabase.auth.signUp()`: se `data.session` vier preenchida (confirmação
+  desligada), a conta já nasce logada e vai direto pro `/onboarding`; se não
+  vier (confirmação ligada, que é o caso de produção com Gmail), mostra a
+  mensagem "Conta criada! Enviamos um link de confirmação para o seu email.
+  Clique nele e, depois, volte aqui para entrar." — isso **já existia**, não
+  precisei criar.
+- **O que faltava, e adicionei**: essa tela não tinha nenhuma opção de
+  reenviar o email (se cair no spam, ou se o Gmail demorar) — o usuário
+  ficaria sem saber o que fazer além de esperar. Adicionei:
+  - `EstadoCadastro` agora guarda o `email` digitado (só quando o cadastro dá
+    certo), pra não precisar pedir de novo.
+  - Nova Server Action `reenviarConfirmacao()` (mesmo arquivo), que chama
+    `supabase.auth.resend({ type: "signup", email, ... })` — a função
+    oficial do Supabase pra reenviar o email de confirmação de cadastro.
+  - Extraí a lógica de descobrir a URL do site (antes só dentro de
+    `cadastrar()`) pra uma função `obterOrigemAtual()`, reaproveitada pelas
+    2 Server Actions, já que as duas precisam montar o mesmo tipo de link.
+  - `FormularioCadastro.tsx`: a tela de sucesso agora tem um botão "Não
+    recebeu? Reenviar email de confirmação", com sua própria mensagem de
+    erro/sucesso (ex: trata o `over_email_send_rate_limit` do Supabase se
+    você clicar demais vezes seguidas) — sem recarregar a página e sem
+    perder o email já digitado.
+- **Página de destino do link de confirmação**: confirmei que `/onboarding`
+  (`app/onboarding/page.tsx`) existe e já trata certo um usuário recém-
+  confirmado — verifica se ele já é membro de alguma barbearia (não é, nesse
+  caso) e mostra o formulário de criar a primeira barbearia. Os outros 3
+  templates apontam pra `/redefinir-senha` e `/painel/configuracoes`, que
+  também já existem.
+
+**Não consegui testar isso de ponta a ponta no navegador**: no momento em
+que escrevo isto, o SMTP do Gmail e o "Confirm email" ainda não estavam
+religados no seu painel (você disse "vou configurar" — ainda por fazer do
+seu lado), então a tela de sucesso com o botão "Reenviar" não é alcançável
+hoje (o cadastro ainda cai direto no `/onboarding`, logado, sem passar pela
+tela de sucesso). **Pedido pra você**: depois de configurar o SMTP e religar
+"Confirm email", cadastre uma conta nova com um email de verdade e confira:
+a tela de sucesso aparece, o botão "Reenviar" manda um segundo email (confira
+que chegou), e o link de qualquer um dos dois emails cai certinho em
+`/onboarding`, já logado.
+
+### 2 — SQL de limpeza das contas de teste
+
+Criei `supabase/manutencao/limpar_contas_teste.sql` — **não roda nada
+sozinho**: é um arquivo pra você colar manualmente no SQL Editor, em 2
+partes (leitura primeiro, depois a parte de apagar, que fica comentada
+dentro de `/* ... */` até você decidir descomentar). Detalhes completos nos
+comentários do próprio arquivo: a ordem certa (barbearias antes dos
+usuários, e por quê, considerando os `on delete cascade`/`on delete set
+null` das migrations) e a proteção dupla contra apagar algo errado (lista
+`in (...)` do que apagar + trava `not in (...)` do que nunca apagar, mesmo
+que a primeira lista seja editada errado no futuro).
+
+**Atenção a um detalhe que só você pode confirmar**: a proteção inclui dois
+emails que nunca devem ser apagados — `sobreira.fabricio@hotmail.com` (que
+você pediu explicitamente) e um segundo que eu completei como
+`sobreira.barros.fabricio@gmail.com` (o email desta conversa, que presumi
+ser "seu usuário principal"). **Confira esse segundo email antes de rodar a
+Parte 2** — se o seu login de verdade no painel for outro, troque no
+arquivo antes de descomentar.
+
+### 3 — Roteiro de pré-lançamento
+
+Reorganizei a seção "🚀 Pré-lançamento" do `PENDENCIAS.md` na ordem que você
+passou (a → e), já refletindo que o SMTP do Gmail e o "Confirm email" desta
+rodada tiram 2 itens de lá (eles deixam de ser "pré-lançamento" e passam a
+ser "para fazer agora", via tarefa 1 acima) — ver a seção atualizada
+diretamente no arquivo.
+
+---
+
 ## Nova rodada — Faturamento premium + Agenda sem confirmação manual (outubro de 2026)
 
 Rodada com 4 tarefas independentes, cada uma com seu próprio commit (`git log`
